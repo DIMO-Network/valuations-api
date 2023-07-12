@@ -1,0 +1,12 @@
+output = "internal/infrastructure/db/models"
+no-tests = true
+
+[psql]
+dbname = "valuations_api"
+blacklist = ["migrations"]
+host   = "localhost"
+port   = 5432
+user   = "dimo"
+pass   = "dimo"
+schema = "valuations_api"
+sslmode= "disable"

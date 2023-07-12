@@ -1,0 +1,18 @@
+ENVIRONMENT: local
+LOG_LEVEL: info
+PORT: 3050
+GRPC_PORT: 9091
+SERVICE_NAME: valuations-api
+SERVICE_VERSION: "1.0.0"
+DB:
+  USER: dimo
+  PASSWORD: dimo
+  PORT: 5432
+  HOST: localhost
+  NAME: valuation_api
+  MAX_OPEN_CONNECTIONS: 5
+  MAX_IDLE_CONNECTIONS: 5
+TRACE_MONITOR_VIEW: http://localhost:14268/api/traces
+MONITORING_PORT: 8866
+KAFKA_BROKERS: 127.0.0.1:9092
+DBC_DECODING_TOPIC: topic.dbc.decoding
