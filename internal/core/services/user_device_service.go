@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
@@ -12,22 +14,23 @@ import (
 )
 
 //go:generate mockgen -source user_device_service.go -destination mocks/user_device_service_mock.go
-type UserDeviceService interface {
+type UserDeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
+	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
 }
 
-type userDeviceService struct {
+type userDeviceAPIService struct {
 	devicesConn *grpc.ClientConn
 	memoryCache *gocache.Cache
 }
 
-func NewUserDeviceService(devicesConn *grpc.ClientConn) UserDeviceService {
+func NewUserDeviceService(devicesConn *grpc.ClientConn) UserDeviceAPIService {
 	c := gocache.New(8*time.Hour, 15*time.Minute)
-	return &userDeviceService{devicesConn: devicesConn, memoryCache: c}
+	return &userDeviceAPIService{devicesConn: devicesConn, memoryCache: c}
 }
 
 // GetUserDevice gets the userDevice from devices-api, checks in local cache first
-func (das *userDeviceService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
+func (das *userDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
 	if len(userDeviceID) == 0 {
 		return nil, fmt.Errorf("user device id was empty - invalid")
 	}
@@ -49,4 +52,28 @@ func (das *userDeviceService) GetUserDevice(ctx context.Context, userDeviceID st
 	}
 
 	return userDevice, nil
+}
+
+// GetAllUserDevice gets all userDevices from devices-api
+func (das *userDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error) {
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+	all, err := deviceClient.GetAllUserDevice(ctx, &pb.GetAllUserDeviceRequest{Wmi: wmi})
+	if err != nil {
+		return nil, err
+	}
+
+	var useDevices []*pb.UserDevice
+	for {
+		response, err := all.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error while receiving response: %v", err)
+		}
+
+		useDevices = append(useDevices, response)
+	}
+
+	return useDevices, nil
 }

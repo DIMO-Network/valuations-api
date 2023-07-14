@@ -106,7 +106,7 @@ func getTestDbSettings(dbName string) config.Settings {
 			MaxOpenConnections: 2,
 			MaxIdleConnections: 2,
 		},
-		ServiceName: "vehicle-signal-decoding",
+		ServiceName: "valuations-api",
 	}
 	return settings
 }
@@ -134,7 +134,7 @@ func TruncateTables(db *sql.DB, t *testing.T) {
 func Logger() *zerolog.Logger {
 	l := zerolog.New(os.Stdout).With().
 		Timestamp().
-		Str("app", "vehicle-signal-decoding").
+		Str("app", "valuations-api").
 		Logger()
 	return &l
 }

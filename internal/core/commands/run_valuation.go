@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
@@ -18,14 +19,25 @@ type RunValuationCommandHandler interface {
 type runValuationCommandHandler struct {
 	DBS                      func() *db.ReaderWriter
 	logger                   zerolog.Logger
-	userDeviceService        services.UserDeviceService
+	userDeviceService        services.UserDeviceAPIService
 	NATSSvc                  *services.NATSService
 	vincarioValuationService services.VincarioValuationService
 	drivlyValuationService   services.DrivlyValuationService
 }
 
-func NewRunValuationCommandHandler(dbs func() *db.ReaderWriter, logger zerolog.Logger, userDeviceService services.UserDeviceService) RunValuationCommandHandler {
-	return runValuationCommandHandler{DBS: dbs, logger: logger, userDeviceService: userDeviceService}
+func NewRunValuationCommandHandler(dbs func() *db.ReaderWriter, logger zerolog.Logger, settings *config.Settings,
+	userDeviceService services.UserDeviceAPIService,
+	ddSvc services.DeviceDefinitionsAPIService,
+	uddSvc services.UserDeviceDataAPIService,
+	NATSSvc services.NATSService) RunValuationCommandHandler {
+	return runValuationCommandHandler{
+		DBS:                      dbs,
+		logger:                   logger,
+		userDeviceService:        userDeviceService,
+		vincarioValuationService: services.NewVincarioValuationService(dbs, &logger, settings, userDeviceService),
+		drivlyValuationService:   services.NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc),
+		NATSSvc:                  &NATSSvc,
+	}
 }
 
 type RunValuationCommandRequest struct {
@@ -86,7 +98,7 @@ func (h runValuationCommandHandler) Execute(ctx context.Context, command *RunVal
 				h.inProgress(msg)
 
 				if userDevice.CountryCode == "USA" || userDevice.CountryCode == "CAN" || userDevice.CountryCode == "MEX" {
-					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, userDevice.Vin)
+					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
 						h.logger.Err(err).Str("vin", *userDevice.Vin).Msg("error pulling drivly data")
 					} else {

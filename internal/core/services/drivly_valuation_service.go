@@ -28,21 +28,23 @@ type DrivlyValuationService interface {
 }
 
 type drivlyValuationService struct {
-	dbs         func() *db.ReaderWriter
-	vincarioSvc VincarioAPIService
-	ddSvc       DeviceDefinitionsAPIService
-	drivlySvc   DrivlyAPIService
-	udSvc       UserDeviceService
-	geoSvc      GoogleGeoAPIService
-	uddSvc      UserDeviceDataAPIService
-	log         *zerolog.Logger
+	dbs       func() *db.ReaderWriter
+	ddSvc     DeviceDefinitionsAPIService
+	drivlySvc DrivlyAPIService
+	udSvc     UserDeviceAPIService
+	geoSvc    GoogleGeoAPIService
+	uddSvc    UserDeviceDataAPIService
+	log       *zerolog.Logger
 }
 
-func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings) DrivlyValuationService {
+func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, ddSvc DeviceDefinitionsAPIService, uddSvc UserDeviceDataAPIService) DrivlyValuationService {
 	return &drivlyValuationService{
-		dbs:         DBS,
-		log:         log,
-		vincarioSvc: NewVincarioAPIService(settings, log),
+		dbs:       DBS,
+		log:       log,
+		drivlySvc: NewDrivlyAPIService(settings, DBS),
+		ddSvc:     ddSvc,
+		geoSvc:    NewGoogleGeoAPIService(settings),
+		uddSvc:    uddSvc,
 	}
 }
 

@@ -24,16 +24,17 @@ type VincarioValuationService interface {
 
 type vincarioValuationService struct {
 	dbs         func() *db.ReaderWriter
-	vincarioSvc VincarioAPIService
-	udSvc       UserDeviceService
 	log         *zerolog.Logger
+	vincarioSvc VincarioAPIService
+	udSvc       UserDeviceAPIService
 }
 
-func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings) VincarioValuationService {
+func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, udSvc UserDeviceAPIService) VincarioValuationService {
 	return &vincarioValuationService{
 		dbs:         DBS,
 		log:         log,
 		vincarioSvc: NewVincarioAPIService(settings, log),
+		udSvc:       udSvc,
 	}
 }
 

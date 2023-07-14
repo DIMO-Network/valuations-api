@@ -61,10 +61,7 @@ func (i *WorkerListenerService) processEvent(event *shared.CloudEvent[VechicleSi
 
 	switch event.Type {
 	case vehicleSignalDecodingEventType:
-		command := &commands.RunValuationCommandRequest{
-			ID:   event.Subject,
-			Time: event.Time,
-		}
+		command := &commands.RunValuationCommandRequest{}
 
 		return i.handler.Execute(ctx, command)
 	default:
