@@ -71,7 +71,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	// make sure userdevice exists
-	ud, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}
@@ -111,7 +111,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	// get mileage for the drivly request
-	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, ud.DeviceDefinitionId)
+	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
 	deviceMileage, err := d.getDeviceMileage(userDeviceData, int(deviceDef.Type.Year))
 	if err != nil {
 		return ErrorDataPullStatus, err
@@ -122,8 +122,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	udMD := new(internalmodel.UserDeviceMetadata)
-	//_ = ud.Metadata.Unmarshal(udMD) TODO: edu
 
+	// todo: need to add this property to the grpc response
+	// todo: need a way to update user device metadata via grpc
 	if udMD.PostalCode == nil {
 		lat := userDeviceData.Latitude
 		long := userDeviceData.Longitude
@@ -140,8 +141,8 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 				udMD.GeoDecodedStateProv = &gl.AdminAreaLevel1
 
 				// TODO: edu
-				//_ = ud.Metadata.Marshal(udMD)
-				//_, err = ud.Update(ctx, d.dbs().Writer, boil.Whitelist(models.UserDeviceColumns.Metadata, models.UserDeviceColumns.UpdatedAt))
+				//_ = userDevice.Metadata.Marshal(udMD)
+				//_, err = userDevice.Update(ctx, d.dbs().Writer, boil.Whitelist(models.UserDeviceColumns.Metadata, models.UserDeviceColumns.UpdatedAt))
 				//if err != nil {
 				//	localLog.Err(err).Msg("failed to update user_device.metadata with geodecode info")
 				//}
@@ -166,7 +167,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	// check on edmunds data so we can get the style id
-	edmundsExists, _ := models.Valuations(models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(ud.Id)),
+	edmundsExists, _ := models.Valuations(models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDevice.Id)),
 		models.ValuationWhere.EdmundsMetadata.IsNotNull()).Exists(ctx, d.dbs().Reader)
 	if !edmundsExists {
 		// extra optional data that only needs to be pulled once.
@@ -175,11 +176,11 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 			_ = externalVinData.EdmundsMetadata.Marshal(edmunds)
 		}
 		// fill in edmunds style_id in our user_device if it exists and not already set. None of these seen as bad errors so just logs
-		if edmunds != nil && ud.DeviceStyleId == nil {
-			d.setUserDeviceStyleFromEdmunds(ctx, edmunds, ud)
-			localLog.Info().Msgf("set device_style_id for ud id %s", ud.Id)
+		if edmunds != nil && userDevice.DeviceStyleId == nil {
+			d.setUserDeviceStyleFromEdmunds(ctx, edmunds, userDevice)
+			localLog.Info().Msgf("set device_style_id for userDevice id %s", userDevice.Id)
 		} else {
-			localLog.Warn().Msgf("could not set edmunds style id. edmunds data exists: %v. ud style_id already set: %v", edmunds != nil, ud.DeviceStyleId)
+			localLog.Warn().Msgf("could not set edmunds style id. edmunds data exists: %v. userDevice style_id already set: %v", edmunds != nil, userDevice.DeviceStyleId)
 		}
 	}
 

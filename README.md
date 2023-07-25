@@ -1,6 +1,6 @@
 # valuations-api
 
-Api for managing vehicle signal decoding on the DIMO platform.
+Api for obtaining and querying vehicle valuations. 
 
 ## Developing locally
 

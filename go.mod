@@ -1,6 +1,6 @@
 module github.com/DIMO-Network/valuations-api
 
-go 1.18
+go 1.20
 
 require (
 	github.com/DIMO-Network/device-data-api v0.4.16

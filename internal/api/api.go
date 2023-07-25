@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/DIMO-Network/valuations-api/internal/core/commands"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/kafka"
 	"github.com/Shopify/sarama"
 
@@ -67,18 +66,18 @@ func startValuationConsumer(pdb db.Store, logger zerolog.Logger, settings *confi
 	cfg := &kafka.Config{
 		ClusterConfig:   clusterConfig,
 		BrokerAddresses: strings.Split(settings.KafkaBrokers, ","),
-		Topic:           settings.DBCDecodingTopic,
+		Topic:           settings.ValuationRequestTopic,
 		GroupID:         "valuations-api",
-		MaxInFlight:     int64(5),
+		MaxInFlight:     int64(3),
 	}
 	consumer, err := kafka.NewConsumer(cfg, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Could not start credential update consumer")
 	}
 
-	natSvc, _ := services.NewNATSService(settings, &logger)
-	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, *natSvc)
-	service := NewWorkerListenerService(logger, handler)
+	service := NewWorkerListenerService(logger, userDeviceSvc,
+		services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc),
+		services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc))
 
 	consumer.Start(context.Background(), service.ProcessWorker)
 
