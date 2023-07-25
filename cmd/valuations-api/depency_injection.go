@@ -31,7 +31,7 @@ func newDependencyContainer(settings *config.Settings, logger zerolog.Logger, db
 }
 
 func (dc *dependencyContainer) getDeviceDefinitionService() (services.DeviceDefinitionsAPIService, *grpc.ClientConn) {
-	definitionsConn, err := grpc.Dial(dc.settings.DevicesGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	definitionsConn, err := grpc.Dial(dc.settings.DeviceDefinitionsGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		dc.logger.Fatal().Err(err).Str("definitions-api-grpc-addr", dc.settings.DeviceDefinitionsGRPCAddr).
 			Msg("failed to dial device definitions grpc")
@@ -50,10 +50,10 @@ func (dc *dependencyContainer) getDeviceService() (services.UserDeviceAPIService
 }
 
 func (dc *dependencyContainer) getDeviceDataService() (services.UserDeviceDataAPIService, *grpc.ClientConn) {
-	devicesConn, err := grpc.Dial(dc.settings.DevicesGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	deviceDataConn, err := grpc.Dial(dc.settings.DeviceDataGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		dc.logger.Fatal().Err(err).Msg("failed to dial device data grpc")
 	}
-	dc.deviceDataSvc = services.NewUserDeviceDataAPIService(devicesConn)
-	return dc.deviceDataSvc, devicesConn
+	dc.deviceDataSvc = services.NewUserDeviceDataAPIService(deviceDataConn)
+	return dc.deviceDataSvc, deviceDataConn
 }
