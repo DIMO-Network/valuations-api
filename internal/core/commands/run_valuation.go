@@ -13,7 +13,7 @@ import (
 //go:generate mockgen -source run_valuation.go -destination mocks/run_valuation_mock.go
 
 type RunValuationCommandHandler interface {
-	Execute(ctx context.Context, command *RunValuationCommandRequest) error
+	Execute(ctx context.Context) error
 }
 
 type runValuationCommandHandler struct {
@@ -30,7 +30,7 @@ func NewRunValuationCommandHandler(dbs func() *db.ReaderWriter, logger zerolog.L
 	ddSvc services.DeviceDefinitionsAPIService,
 	uddSvc services.UserDeviceDataAPIService,
 	natsSvc *services.NATSService) RunValuationCommandHandler {
-	return runValuationCommandHandler{
+	return &runValuationCommandHandler{
 		DBS:                      dbs,
 		logger:                   logger,
 		userDeviceService:        userDeviceService,
@@ -48,7 +48,7 @@ type RunValuationCommandRequest struct {
 type RunTestSignalCommandResponse struct {
 }
 
-func (h runValuationCommandHandler) Execute(ctx context.Context, command *RunValuationCommandRequest) error {
+func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.JetStreamSubject, h.NATSSvc.DurableConsumer, nats.AckWait(h.NATSSvc.AckTimeout))
 
 	if err != nil {
@@ -121,7 +121,6 @@ func (h runValuationCommandHandler) Execute(ctx context.Context, command *RunVal
 			}
 		}
 	}
-	return nil
 }
 
 func (h *runValuationCommandHandler) inProgress(msg *nats.Msg) {

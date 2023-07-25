@@ -29,7 +29,13 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	natsSvc *services.NATSService) {
 
 	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
-	// todo then what uses the handler?
+
+	go func() {
+		err := handler.Execute(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("unable to start nats consumer")
+		}
+	}()
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings)
