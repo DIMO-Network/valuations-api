@@ -18,10 +18,9 @@ env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://valuations-api.dimo.zone
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
-  DBC_DECODING_TOPIC: topic.dbc.decoding
-  DEVICE_GRPC_ADDR: devices-api-prod:8086
+  DEVICES_GRPC_ADDR: devices-api-prod:8086
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-prod:8086
-  NATS_URL: nats-prod:4222
+  DEVICE_DATA_GRPC_ADDR: device-data-api-prod:8086
 ingress:
   enabled: false
   className: nginx
@@ -44,7 +43,7 @@ resources:
     memory: 512Mi
   requests:
     cpu: 100m
-    memory: 256Mi
+    memory: 128Mi
 autoscaling:
   enabled: false
   minReplicas: 1
