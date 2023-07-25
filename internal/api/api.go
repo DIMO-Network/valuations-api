@@ -4,6 +4,14 @@ import (
 	"context"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
+	"github.com/DIMO-Network/valuations-api/internal/infrastructure/metrics"
+	"github.com/DIMO-Network/valuations-api/internal/rpc"
+	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -23,6 +31,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	startMonitoringServer(logger, settings)
 	startValuationConsumer(pdb, logger, settings, ddSvc, userDeviceSvc, deviceDataSvc)
+	go startGRCPServer(pdb, logger, settings)
 
 	c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
@@ -82,4 +91,26 @@ func startValuationConsumer(pdb db.Store, logger zerolog.Logger, settings *confi
 	consumer.Start(context.Background(), service.ProcessWorker)
 
 	logger.Info().Msg("Vehicle Signal Decoding consumer started")
+}
+
+func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings) {
+	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
+	}
+
+	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			metrics.GRPCMetricsAndLogMiddleware(&logger),
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+		)),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+	)
+	pb.RegisterValuationsServiceServer(server, rpc.NewValuationsService(pdb.DBS, settings, &logger))
+
+	if err := server.Serve(lis); err != nil {
+		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
+	}
 }
