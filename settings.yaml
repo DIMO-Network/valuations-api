@@ -14,6 +14,9 @@ DB:
   MAX_OPEN_CONNECTIONS: 5
   MAX_IDLE_CONNECTIONS: 5
 
+JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys # dev
+#JWT_KEY_SET_URL: http://127.0.0.1:5556/keys
+
 VINCARIO_API_URL: https://api.vindecoder.eu/3.2
 VINCARIO_API_KEY:
 VINCARIO_API_SECRET: X

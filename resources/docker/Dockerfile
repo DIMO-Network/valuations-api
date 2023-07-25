@@ -29,5 +29,6 @@ USER dimo
 
 EXPOSE 8080
 EXPOSE 8888
+EXPOSE 8086
 
 CMD /valuations-api

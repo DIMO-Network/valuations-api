@@ -11,6 +11,7 @@ type Settings struct {
 	GRPCPort                  string      `yaml:"GRPC_PORT"`
 	MonitoringPort            string      `yaml:"MONITORING_PORT"`
 	DB                        db.Settings `yaml:"DB"`
+	JwtKeySetURL              string      `yaml:"JWT_KEY_SET_URL"`
 	ServiceName               string      `yaml:"SERVICE_NAME"`
 	ServiceVersion            string      `yaml:"SERVICE_VERSION"`
 	DevicesGRPCAddr           string      `yaml:"DEVICES_GRPC_ADDR"`
