@@ -57,3 +57,11 @@ func (dc *dependencyContainer) getDeviceDataService() (services.UserDeviceDataAP
 	dc.deviceDataSvc = services.NewUserDeviceDataAPIService(deviceDataConn)
 	return dc.deviceDataSvc, deviceDataConn
 }
+
+func (dc *dependencyContainer) getNATSService() *services.NATSService {
+	service, err := services.NewNATSService(dc.settings, dc.logger)
+	if err != nil {
+		dc.logger.Fatal().Err(err).Msg("failed to connect to NATS server")
+	}
+	return service
+}

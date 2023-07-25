@@ -68,7 +68,8 @@ func main() {
 
 	// Run API
 	if len(os.Args) == 1 {
-		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc)
+
+		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc, deps.getNATSService())
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

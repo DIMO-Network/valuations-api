@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/valuations-api/internal/core/commands"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/metrics"
 	"github.com/DIMO-Network/valuations-api/internal/rpc"
@@ -14,11 +15,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
-
-	"github.com/DIMO-Network/valuations-api/internal/infrastructure/kafka"
-	"github.com/Shopify/sarama"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/gofiber/adaptor/v2"
@@ -27,10 +24,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService, userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
+func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings,
+	ddSvc services.DeviceDefinitionsAPIService, userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService,
+	natsSvc *services.NATSService) {
+
+	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
+	// todo then what uses the handler?
 
 	startMonitoringServer(logger, settings)
-	startValuationConsumer(pdb, logger, settings, ddSvc, userDeviceSvc, deviceDataSvc)
 	go startGRCPServer(pdb, logger, settings)
 
 	c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
@@ -57,40 +58,6 @@ func startMonitoringServer(logger zerolog.Logger, settings *config.Settings) {
 	}()
 
 	logger.Info().Str("port", "8888").Msg("Started monitoring web server.")
-}
-
-func startValuationConsumer(pdb db.Store, logger zerolog.Logger, settings *config.Settings,
-	ddSvc services.DeviceDefinitionsAPIService,
-	userDeviceSvc services.UserDeviceAPIService,
-	deviceDataSvc services.UserDeviceDataAPIService) {
-
-	if len(settings.KafkaBrokers) == 0 {
-		return
-	}
-
-	clusterConfig := sarama.NewConfig()
-	clusterConfig.Version = sarama.V2_8_1_0
-	clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
-
-	cfg := &kafka.Config{
-		ClusterConfig:   clusterConfig,
-		BrokerAddresses: strings.Split(settings.KafkaBrokers, ","),
-		Topic:           settings.ValuationRequestTopic,
-		GroupID:         "valuations-api",
-		MaxInFlight:     int64(3),
-	}
-	consumer, err := kafka.NewConsumer(cfg, &logger)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Could not start credential update consumer")
-	}
-
-	service := NewWorkerListenerService(logger, userDeviceSvc,
-		services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc),
-		services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc))
-
-	consumer.Start(context.Background(), service.ProcessWorker)
-
-	logger.Info().Msg("Vehicle Signal Decoding consumer started")
 }
 
 func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings) {

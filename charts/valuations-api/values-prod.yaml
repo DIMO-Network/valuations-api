@@ -17,10 +17,10 @@ env:
   SERVICE_NAME: valuations-api
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://valuations-api.dimo.zone
-  KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   DEVICES_GRPC_ADDR: devices-api-prod:8086
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-prod:8086
   DEVICE_DATA_GRPC_ADDR: device-data-api-prod:8086
+  NATS_URL: nats-prod:4222
 ingress:
   enabled: false
   className: nginx
