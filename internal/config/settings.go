@@ -31,3 +31,7 @@ type Settings struct {
 	NATSAckTimeout       string `yaml:"NATS_ACK_TIMEOUT"`
 	NATSDurableConsumer  string `yaml:"NATS_DURABLE_CONSUMER"`
 }
+
+func (s *Settings) IsProduction() bool {
+	return s.Environment == "prod"
+}

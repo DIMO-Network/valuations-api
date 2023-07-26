@@ -3,6 +3,11 @@ package dbtest
 import (
 	"context"
 	"database/sql"
+	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"net/http"
+	"strings"
 
 	_ "embed" //nolint
 
@@ -26,7 +31,7 @@ func StartContainerDatabase(ctx context.Context, dbName string, t *testing.T, mi
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	settings := getTestDbSettings(dbName)
 	pgPort := "5432/tcp"
-	dbURL := func(port nat.Port) string {
+	dbURL := func(host string, port nat.Port) string {
 		return fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", settings.DB.User, settings.DB.Password, port.Port(), settings.DB.Name)
 	}
 	cr := testcontainers.ContainerRequest{
@@ -34,7 +39,7 @@ func StartContainerDatabase(ctx context.Context, dbName string, t *testing.T, mi
 		Env:          map[string]string{"POSTGRES_USER": settings.DB.User, "POSTGRES_PASSWORD": settings.DB.Password, "POSTGRES_DB": settings.DB.Name},
 		ExposedPorts: []string{pgPort},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},
-		WaitingFor:   wait.ForSQL(nat.Port(pgPort), "postgres", dbURL).Timeout(time.Second * 15),
+		WaitingFor:   wait.ForSQL(nat.Port(pgPort), "postgres", dbURL),
 	}
 
 	pgContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -137,4 +142,38 @@ func Logger() *zerolog.Logger {
 		Str("app", "valuations-api").
 		Logger()
 	return &l
+}
+
+// SetupAppFiber sets up app fiber with defaults for testing, like our production error handler.
+func SetupAppFiber(logger zerolog.Logger) *fiber.App {
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return helpers.ErrorHandler(c, err, &logger, false)
+		},
+	})
+	return app
+}
+
+// AuthInjectorTestHandler injects fake jwt with sub
+func AuthInjectorTestHandler(userID string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"sub": userID,
+			"nbf": time.Now().Unix(),
+		})
+
+		c.Locals("user", token)
+		return c.Next()
+	}
+}
+
+func BuildRequest(method, url, body string) *http.Request {
+	req, _ := http.NewRequest(
+		method,
+		url,
+		strings.NewReader(body),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	return req
 }

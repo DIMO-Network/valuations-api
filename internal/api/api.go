@@ -5,6 +5,7 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
+	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/DIMO-Network/valuations-api/internal/core/commands"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/metrics"
@@ -17,14 +18,12 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
@@ -107,7 +106,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return ErrorHandler(c, err, logger)
+			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
 		},
 		DisableStartupMessage: true,
 		ReadBufferSize:        16000,
@@ -125,7 +124,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController()
+	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
@@ -148,22 +147,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 		}
 	}()
 	return app
-}
-
-// ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
-func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
-	code := fiber.StatusInternalServerError // Default 500 statuscode
-	message := "Internal error."
-
-	var e *fiber.Error
-	if errors.As(err, &e) {
-		code = e.Code
-		message = e.Message
-	}
-
-	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
-
-	return c.Status(code).JSON(CodeResp{Code: code, Message: message})
 }
 
 type CodeResp struct {
