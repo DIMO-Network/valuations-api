@@ -4,7 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
@@ -21,16 +23,18 @@ import (
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
+const userId = "testuser"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
-	pdb        db.Store
-	controller *ValuationsController
-	container  testcontainers.Container
-	ctx        context.Context
-	mockCtrl   *gomock.Controller
-	app        *fiber.App
-	testUserID string
+	pdb           db.Store
+	controller    *ValuationsController
+	container     testcontainers.Container
+	ctx           context.Context
+	mockCtrl      *gomock.Controller
+	app           *fiber.App
+	testUserID    string
+	userDeviceSvc *mock_services.MockUserDeviceAPIService
 }
 
 // SetupSuite starts container db
@@ -40,6 +44,7 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	logger := dbtest.Logger()
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
+	s.userDeviceSvc = mock_services.NewMockUserDeviceAPIService(mockCtrl)
 	var err error
 
 	if err != nil {
@@ -98,6 +103,14 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 		"PricingMetadata": []byte(testDrivlyPricingJSON),
 	}, s.pdb)
 
+	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+		Id:           udID,
+		UserId:       userId,
+		VinConfirmed: true,
+		Vin:          &vin,
+		CountryCode:  "USA",
+	}, nil)
+
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
 	body, _ := io.ReadAll(response.Body)
@@ -126,6 +139,13 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"PricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, s.pdb)
+	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+		Id:           udID,
+		UserId:       userId,
+		VinConfirmed: true,
+		Vin:          &vin,
+		CountryCode:  "USA",
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
@@ -149,6 +169,13 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
 	}, s.pdb)
+	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+		Id:           udID,
+		UserId:       userId,
+		VinConfirmed: true,
+		Vin:          &vin,
+		CountryCode:  "USA",
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request, 2000)
@@ -181,6 +208,13 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 		// "PricingMetadata":   nil,
 		// "BlackbookMetadata": nil,
 	}, s.pdb)
+	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+		Id:           udID,
+		UserId:       userId,
+		VinConfirmed: true,
+		Vin:          &vin,
+		CountryCode:  "USA",
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
 	response, _ := s.app.Test(request)
