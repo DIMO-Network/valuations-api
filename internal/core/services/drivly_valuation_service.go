@@ -112,6 +112,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 
 	// get mileage for the drivly request
 	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
 	deviceMileage, err := d.getDeviceMileage(userDeviceData, int(deviceDef.Type.Year))
 	if err != nil {
 		return ErrorDataPullStatus, err

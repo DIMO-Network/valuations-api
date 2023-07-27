@@ -135,7 +135,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 	})
 
 	v1Auth := app.Group("/v1", jwtAuth)
-	// if this grows bring in udOwner stuff
+	// todo bring in udOwner stuff, but see if can put in shared
 	v1Auth.Get("/user/devices/:userDeviceID/valuations", valuationsController.GetValuations)
 	v1Auth.Get("/user/devices/:userDeviceID/offers", valuationsController.GetOffers)
 

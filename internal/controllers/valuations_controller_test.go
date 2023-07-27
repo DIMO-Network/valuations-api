@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/DIMO-Network/shared/db"
-	"github.com/DIMO-Network/shared/redis/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
@@ -25,14 +24,13 @@ const migrationsDirRelPath = "../infrastructure/db/migrations"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
-	pdb         db.Store
-	controller  *ValuationsController
-	container   testcontainers.Container
-	ctx         context.Context
-	mockCtrl    *gomock.Controller
-	app         *fiber.App
-	testUserID  string
-	redisClient *mocks.MockCacheService
+	pdb        db.Store
+	controller *ValuationsController
+	container  testcontainers.Container
+	ctx        context.Context
+	mockCtrl   *gomock.Controller
+	app        *fiber.App
+	testUserID string
 }
 
 // SetupSuite starts container db

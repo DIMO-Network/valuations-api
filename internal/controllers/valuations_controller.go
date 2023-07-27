@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"database/sql"
-	"github.com/DIMO-Network/devices-api/models"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
+	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -33,6 +33,14 @@ func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter) *
 
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
+	userID := helpers.GetUserID(c)
+	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+	if err != nil {
+		return err
+	}
+	if ud.UserId != userID {
+		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
+	}
 
 	logger := helpers.GetLogger(c, vc.log).With().Str("route", c.Route().Path).Logger()
 
@@ -41,8 +49,8 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	}
 
 	// Drivly data
-	valuationData, err := models.ExternalVinData(
-		models.ExternalVinDatumWhere.UserDeviceID.EQ(null.StringFrom(udi)),
+	valuationData, err := models.Valuations(
+		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(udi)),
 		qm.Where("pricing_metadata is not null or vincario_metadata is not null"),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(c.Context(), vc.dbs().Reader)
@@ -135,15 +143,23 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
+	userID := helpers.GetUserID(c)
+	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+	if err != nil {
+		return err
+	}
+	if ud.UserId != userID {
+		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
+	}
 
 	dOffer := DeviceOffer{
 		OfferSets: []OfferSet{},
 	}
 
 	// Drivly data
-	drivlyVinData, err := models.ExternalVinData(
-		models.ExternalVinDatumWhere.UserDeviceID.EQ(null.StringFrom(udi)),
-		models.ExternalVinDatumWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
+	drivlyVinData, err := models.Valuations(
+		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(udi)),
+		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(c.Context(), vc.dbs().Reader)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {

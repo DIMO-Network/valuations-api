@@ -7,13 +7,11 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
-	"github.com/Shopify/sarama"
 	"github.com/rs/zerolog"
 )
 
 // dependencyContainer way to hold different dependencies we need for our app. We could put all our deps and follow this pattern for everything.
 type dependencyContainer struct {
-	kafkaProducer sarama.SyncProducer
 	settings      *config.Settings
 	logger        *zerolog.Logger
 	ddSvc         services.DeviceDefinitionsAPIService

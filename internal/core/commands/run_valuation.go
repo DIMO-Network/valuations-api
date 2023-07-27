@@ -102,7 +102,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 					if err != nil {
 						h.logger.Err(err).Str("vin", *userDevice.Vin).Msg("error pulling drivly data")
 					} else {
-						h.logger.Info().Msgf("Drivly   %s vin: %s, country: %s", status, userDevice.Vin, userDevice.CountryCode)
+						h.logger.Info().Msgf("Drivly %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
 					}
 				} else {
 					status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
