@@ -17,6 +17,7 @@ import (
 type UserDeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
 	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
+	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
 }
 
 type userDeviceAPIService struct {
@@ -52,6 +53,12 @@ func (das *userDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID
 	}
 
 	return userDevice, nil
+}
+
+func (das *userDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error {
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+	_, err := deviceClient.UpdateUserDeviceMetadata(ctx, request)
+	return err
 }
 
 // GetAllUserDevice gets all userDevices from devices-api

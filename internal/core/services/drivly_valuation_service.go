@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/tidwall/gjson"
 
 	"time"
@@ -11,7 +12,6 @@ import (
 	pbdeviceapi "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
-	internalmodel "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -124,38 +124,36 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		Mileage: deviceMileage,
 	}
 
-	udMD := new(internalmodel.UserDeviceMetadata)
-
-	// todo: need to add this property to the grpc response
-	// todo: need a way to update user device metadata via grpc
-	if udMD.PostalCode == nil {
+	if userDevice.PostalCode == "" {
+		// need to geodecode the postal code
 		lat := userDeviceData.Latitude
 		long := userDeviceData.Longitude
-		localLog.Info().Msgf("lat long found: %f, %f", lat, long)
-		if lat != 0 && long != 0 {
-			gl, err := d.geoSvc.GeoDecodeLatLong(lat, long)
+		localLog.Info().Msgf("lat long found: %f, %f", safePtrFloat(lat), safePtrFloat(long))
+		if lat != nil && long != nil {
+			gl, err := d.geoSvc.GeoDecodeLatLong(safePtrFloat(lat), safePtrFloat(long))
 			if err != nil {
-				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", lat, long)
+				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", safePtrFloat(lat), safePtrFloat(long))
 			}
 			if gl != nil {
+				userDevice.PostalCode = gl.PostalCode
 				// update UD, ignore if fails doesn't matter
-				udMD.PostalCode = &gl.PostalCode
-				udMD.GeoDecodedCountry = &gl.Country
-				udMD.GeoDecodedStateProv = &gl.AdminAreaLevel1
+				err := d.udSvc.UpdateUserDeviceMetadata(ctx, &pbdeviceapi.UpdateUserDeviceMetadataRequest{
+					UserDeviceId:        userDeviceID,
+					PostalCode:          &gl.PostalCode,
+					GeoDecodedCountry:   &gl.Country,
+					GeoDecodedStateProv: &gl.AdminAreaLevel1,
+				})
+				if err != nil {
+					localLog.Err(err).Msgf("failed to update user device metadata for postal code")
+				}
 
-				// TODO: edu
-				//_ = userDevice.Metadata.Marshal(udMD)
-				//_, err = userDevice.Update(ctx, d.dbs().Writer, boil.Whitelist(models.UserDeviceColumns.Metadata, models.UserDeviceColumns.UpdatedAt))
-				//if err != nil {
-				//	localLog.Err(err).Msg("failed to update user_device.metadata with geodecode info")
-				//}
 				localLog.Info().Msgf("GeoDecoded a lat long: %+v", gl)
 			}
 		}
 	}
 
-	if udMD.PostalCode != nil {
-		reqData.ZipCode = udMD.PostalCode
+	if userDevice.PostalCode != "" {
+		reqData.ZipCode = &userDevice.PostalCode
 	}
 	_ = externalVinData.RequestMetadata.Marshal(reqData)
 
@@ -197,15 +195,22 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	return PulledValuationDrivlyStatus, nil
 }
 
+func safePtrFloat(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
+}
+
 const EstMilesPerYear = 12000.0
 
 func (d *drivlyValuationService) getDeviceMileage(userDeviceData *pb.UserDeviceDataResponse, modelYear int) (mileage *float64, err error) {
 	var deviceMileage *float64
-	if userDeviceData.Odometer > 0 {
-		*deviceMileage = userDeviceData.Odometer
+	if userDeviceData.Odometer != nil && *userDeviceData.Odometer > 0 {
+		deviceMileage = userDeviceData.Odometer
 	}
 
-	if userDeviceData.Odometer == 0 {
+	if userDeviceData.Odometer == nil {
 		deviceMileage = new(float64)
 		yearDiff := time.Now().Year() - modelYear
 		switch {

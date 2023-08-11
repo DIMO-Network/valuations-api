@@ -64,3 +64,17 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDevice(ctx, userDeviceID 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDevice", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDevice), ctx, userDeviceID)
 }
+
+// UpdateUserDeviceMetadata mocks base method.
+func (m *MockUserDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, request *grpc.UpdateUserDeviceMetadataRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUserDeviceMetadata", ctx, request)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUserDeviceMetadata indicates an expected call of UpdateUserDeviceMetadata.
+func (mr *MockUserDeviceAPIServiceMockRecorder) UpdateUserDeviceMetadata(ctx, request interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserDeviceMetadata", reflect.TypeOf((*MockUserDeviceAPIService)(nil).UpdateUserDeviceMetadata), ctx, request)
+}

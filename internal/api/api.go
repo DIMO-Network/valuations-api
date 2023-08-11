@@ -2,6 +2,11 @@ package api
 
 import (
 	"context"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
@@ -21,10 +26,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
@@ -45,7 +46,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings)
-	app := startWebAPI(logger, settings, pdb)
+	app := startWebAPI(logger, settings, pdb, userDeviceSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -103,7 +104,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store, userDeviceSvc services.UserDeviceAPIService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -124,7 +125,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS)
+	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS, userDeviceSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
@@ -135,7 +136,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 	})
 
 	v1Auth := app.Group("/v1", jwtAuth)
-	// todo bring in udOwner stuff, but see if can put in shared
+	// todo bring in udOwner stuff, but see if can put in shared - major refactor btw
 	v1Auth.Get("/user/devices/:userDeviceID/valuations", valuationsController.GetValuations)
 	v1Auth.Get("/user/devices/:userDeviceID/offers", valuationsController.GetOffers)
 

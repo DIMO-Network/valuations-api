@@ -2,6 +2,11 @@ package controllers
 
 import (
 	"database/sql"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
@@ -12,10 +17,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"reflect"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ValuationsController struct {
@@ -24,10 +25,11 @@ type ValuationsController struct {
 	userDeviceService services.UserDeviceAPIService
 }
 
-func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter) *ValuationsController {
+func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter, userDeviceSvc services.UserDeviceAPIService) *ValuationsController {
 	return &ValuationsController{
-		log: log,
-		dbs: dbs,
+		log:               log,
+		dbs:               dbs,
+		userDeviceService: userDeviceSvc,
 	}
 }
 

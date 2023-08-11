@@ -4,6 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
+	"testing"
+
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
@@ -13,17 +16,16 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"io"
-	"testing"
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
-const userId = "testuser"
+const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
@@ -33,7 +35,6 @@ type ValuationsControllerTestSuite struct {
 	ctx           context.Context
 	mockCtrl      *gomock.Controller
 	app           *fiber.App
-	testUserID    string
 	userDeviceSvc *mock_services.MockUserDeviceAPIService
 }
 
@@ -51,11 +52,10 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
-	s.testUserID = "123123"
-	controller := NewValuationsController(logger, s.pdb.DBS)
+	controller := NewValuationsController(logger, s.pdb.DBS, s.userDeviceSvc)
 	app := dbtest.SetupAppFiber(*logger)
-	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(s.testUserID), controller.GetOffers)
-	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(s.testUserID), controller.GetValuations)
+	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
+	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
 	s.controller = controller
 
 	s.app = app
@@ -105,7 +105,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -141,7 +141,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -171,7 +171,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -205,22 +205,21 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 	vin := "vinny"
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
-		// "PricingMetadata":   nil,
-		// "BlackbookMetadata": nil,
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
 	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
-	response, _ := s.app.Test(request)
-	body, _ := io.ReadAll(response.Body)
+	response, err := s.app.Test(request)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 
-	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
+	body, _ := io.ReadAll(response.Body)
 
 	assert.Equal(s.T(), 1, int(gjson.GetBytes(body, "offerSets.#").Int()))
 	assert.Equal(s.T(), "drivly", gjson.GetBytes(body, "offerSets.0.source").String())

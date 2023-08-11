@@ -20,9 +20,6 @@ securityContext:
   capabilities:
     drop:
       - all
-cronJob:
-  enabled: false
-  schedule: 0 0 * * 0
 env:
   ENVIRONMENT: dev
   PORT: '8080'
@@ -104,3 +101,10 @@ serviceMonitor:
   path: /metrics
   port: mon-http
   interval: 30s
+jobs:
+  - name: batch-valuations
+    enabled: false
+    schedule: 0 0 * * 0
+    args:
+      - '-c'
+      - /valuations-api valuations-pull; CODE=$?; echo "valuations-pull completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/DIMO-Network/valuations-api/internal/config"
 	"io"
 	"net/http"
+
+	"github.com/DIMO-Network/valuations-api/internal/config"
 )
 
 //go:generate mockgen -source google_api_service.go -destination mocks/google_api_service_mock.go

@@ -1,9 +1,10 @@
 package helpers
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"strconv"
 )
 
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string

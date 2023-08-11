@@ -3,9 +3,6 @@ image:
   repository: dimozone/valuations-api
   pullPolicy: IfNotPresent
   tag: 4ae27d4
-cronJob:
-  enabled: false
-  schedule: 0 0 * * 0
 env:
   ENVIRONMENT: prod
   PORT: '8080'
@@ -54,3 +51,10 @@ tolerations: []
 affinity: {}
 podDisruptionBudget:
   minAvailable: 1
+jobs:
+  - name: batch-valuations
+    enabled: true
+    schedule: 0 0 * * 0
+    args:
+      - '-c'
+      - /valuations-api valuations-pull; CODE=$?; echo "valuations-pull completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;

@@ -26,9 +26,7 @@ type loadValuationsCmd struct {
 func (*loadValuationsCmd) Name() string     { return "valuations-pull" }
 func (*loadValuationsCmd) Synopsis() string { return "valuations-pull args to stdout." }
 func (*loadValuationsCmd) Usage() string {
-	return `valuations-pull:
-	valuations-pull args.
-  `
+	return `valuations-pull`
 }
 
 // nolint
