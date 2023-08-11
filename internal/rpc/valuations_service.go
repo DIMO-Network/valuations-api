@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"

@@ -2,6 +2,11 @@ package controllers
 
 import (
 	"database/sql"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
@@ -12,10 +17,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"reflect"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ValuationsController struct {

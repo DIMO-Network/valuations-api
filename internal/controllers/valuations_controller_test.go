@@ -4,6 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
+	"testing"
+
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
@@ -19,8 +22,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"io"
-	"testing"
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
@@ -34,7 +35,6 @@ type ValuationsControllerTestSuite struct {
 	ctx           context.Context
 	mockCtrl      *gomock.Controller
 	app           *fiber.App
-	testUserID    string
 	userDeviceSvc *mock_services.MockUserDeviceAPIService
 }
 

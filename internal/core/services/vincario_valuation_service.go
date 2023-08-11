@@ -3,6 +3,9 @@ package services
 import (
 	"context"
 
+	"strings"
+	"time"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
@@ -12,8 +15,6 @@ import (
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"strings"
-	"time"
 )
 
 //go:generate mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go

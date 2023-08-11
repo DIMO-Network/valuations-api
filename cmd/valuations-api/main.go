@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/DIMO-Network/shared/db"
-	"github.com/google/subcommands"
 	"log"
 	"os"
 	"time"
+
+	"github.com/DIMO-Network/shared/db"
+	"github.com/google/subcommands"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/valuations-api/internal/api"

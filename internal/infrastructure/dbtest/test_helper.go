@@ -3,11 +3,12 @@ package dbtest
 import (
 	"context"
 	"database/sql"
+	"net/http"
+	"strings"
+
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"net/http"
-	"strings"
 
 	_ "embed" //nolint
 

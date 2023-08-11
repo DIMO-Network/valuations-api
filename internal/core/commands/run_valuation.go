@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
