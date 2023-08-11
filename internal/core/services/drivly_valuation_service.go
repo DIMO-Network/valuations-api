@@ -127,11 +127,11 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		// need to geodecode the postal code
 		lat := userDeviceData.Latitude
 		long := userDeviceData.Longitude
-		localLog.Info().Msgf("lat long found: %f, %f", lat, long)
+		localLog.Info().Msgf("lat long found: %f, %f", safePtrFloat(lat), safePtrFloat(long))
 		if lat != nil && long != nil {
-			gl, err := d.geoSvc.GeoDecodeLatLong(*lat, *long)
+			gl, err := d.geoSvc.GeoDecodeLatLong(safePtrFloat(lat), safePtrFloat(long))
 			if err != nil {
-				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", lat, long)
+				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", safePtrFloat(lat), safePtrFloat(long))
 			}
 			if gl != nil {
 				userDevice.PostalCode = gl.PostalCode
@@ -192,6 +192,13 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	//defer appmetrics.DrivlyIngestTotalOps.Inc()
 
 	return PulledValuationDrivlyStatus, nil
+}
+
+func safePtrFloat(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
 }
 
 const EstMilesPerYear = 12000.0
