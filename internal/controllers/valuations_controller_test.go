@@ -13,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/tidwall/gjson"
@@ -23,7 +24,7 @@ import (
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
-const userId = "testuser"
+const userId = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
@@ -51,11 +52,10 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
-	s.testUserID = "123123"
-	controller := NewValuationsController(logger, s.pdb.DBS)
+	controller := NewValuationsController(logger, s.pdb.DBS, s.userDeviceSvc)
 	app := dbtest.SetupAppFiber(*logger)
-	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(s.testUserID), controller.GetOffers)
-	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(s.testUserID), controller.GetValuations)
+	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userId), controller.GetOffers)
+	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userId), controller.GetValuations)
 	s.controller = controller
 
 	s.app = app
@@ -205,8 +205,6 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 	vin := "vinny"
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
-		// "PricingMetadata":   nil,
-		// "BlackbookMetadata": nil,
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
@@ -217,10 +215,11 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
-	response, _ := s.app.Test(request)
-	body, _ := io.ReadAll(response.Body)
+	response, err := s.app.Test(request)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 
-	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
+	body, _ := io.ReadAll(response.Body)
 
 	assert.Equal(s.T(), 1, int(gjson.GetBytes(body, "offerSets.#").Int()))
 	assert.Equal(s.T(), "drivly", gjson.GetBytes(body, "offerSets.0.source").String())

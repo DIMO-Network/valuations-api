@@ -24,10 +24,11 @@ type ValuationsController struct {
 	userDeviceService services.UserDeviceAPIService
 }
 
-func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter) *ValuationsController {
+func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter, userDeviceSvc services.UserDeviceAPIService) *ValuationsController {
 	return &ValuationsController{
-		log: log,
-		dbs: dbs,
+		log:               log,
+		dbs:               dbs,
+		userDeviceService: userDeviceSvc,
 	}
 }
 

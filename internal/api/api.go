@@ -45,7 +45,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings)
-	app := startWebAPI(logger, settings, pdb)
+	app := startWebAPI(logger, settings, pdb, userDeviceSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -103,7 +103,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store, userDeviceSvc services.UserDeviceAPIService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -124,7 +124,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store)
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS)
+	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS, userDeviceSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
