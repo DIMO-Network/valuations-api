@@ -24,7 +24,7 @@ import (
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
-const userId = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
+const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
@@ -54,8 +54,8 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 
 	controller := NewValuationsController(logger, s.pdb.DBS, s.userDeviceSvc)
 	app := dbtest.SetupAppFiber(*logger)
-	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userId), controller.GetOffers)
-	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userId), controller.GetValuations)
+	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
+	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
 	s.controller = controller
 
 	s.app = app
@@ -105,7 +105,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -141,7 +141,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -171,7 +171,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
@@ -208,7 +208,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
-		UserId:       userId,
+		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
 		CountryCode:  "USA",
