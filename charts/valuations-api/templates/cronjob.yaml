@@ -1,36 +1,42 @@
-{{- if .Values.cronJob.enabled }}
+{{- range $job := .Values.jobs }}
+  {{- if $job.enabled }}
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "valuations-api.fullname" . }}-load-dd
+  name: {{ include "valuations-api.fullname" $ }}-{{ $job.name }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "valuations-api.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cronJob.schedule | quote}}
+  schedule: {{ $job.schedule | quote }}
   concurrencyPolicy: "Forbid"
   jobTemplate:
     spec:
       template:
         metadata:
           annotations:
-          {{- with .Values.podAnnotations }}
+          {{- with $.Values.podAnnotations }}
             {{- toYaml . | nindent 8 }}
           {{- end }}
           labels:
             {{- include "valuations-api.selectorLabels" . | nindent 12 }}
         spec:
           containers:
-          - name: edmunds-vehicles-sync
+          - name: valuations-api
             securityContext:
-              {{- toYaml .Values.securityContext | nindent 14 }}
+              {{- toYaml $.Values.securityContext | nindent 14 }}
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
             command: ['/bin/sh']
-            args: ['-c', '/valuations-api smartcar-sync && /valuations-api search-sync-dds && /valuations-api populate-device-features && /valuations-api nhtsa-sync-recalls; CODE=$?; echo "smart-car-sync and search-sync-dds completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown; exit $CODE;']
+            {{- with $job.args }}
+            args:
+{{ toYaml . | indent 12 }}
+            {{- end }}
             envFrom:
             - configMapRef:
-                name: {{ include "valuations-api.fullname" . }}-config
+                name: {{ include "valuations-api.fullname" $ }}-config
             - secretRef:
-                name: {{ include "valuations-api.fullname" . }}-secret
+                name: {{ include "valuations-api.fullname" $ }}-secret
           restartPolicy: OnFailure
-{{ end }}          
+  {{ end }}
+{{- end }}
