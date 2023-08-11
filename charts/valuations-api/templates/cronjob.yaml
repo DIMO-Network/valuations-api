@@ -20,7 +20,7 @@ spec:
             {{- toYaml . | nindent 8 }}
           {{- end }}
           labels:
-            {{- include "valuations-api.selectorLabels" . | nindent 12 }}
+            {{- include "valuations-api.selectorLabels" $ | nindent 12 }}
         spec:
           containers:
           - name: valuations-api
