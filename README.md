@@ -74,3 +74,11 @@ In current state this only produces a single message, but should be good enough 
 ### Sample read messages in the topic
 
 `kafka-console-consumer --bootstrap-server localhost:9092 --topic topic.dbc.decoding --from-beginning`
+
+## Swagger
+
+Generate swagger docs:
+`swag init -g cmd/valuations-api/main.go --parseDependency --parseInternal --generatedTime true`
+
+Requirements:
+`go install github.com/swaggo/swag/cmd/swag@latest`
