@@ -52,6 +52,10 @@ service:
       port: 8888
       targetPort: mon-http
       protocol: TCP
+    http:
+      port: 8080
+      targetPort: http
+      protocol: TCP
     grpc:
       port: 8086
       targetPort: grpc
@@ -60,11 +64,14 @@ ports:
   - name: mon-http
     containerPort: 8888
     protocol: TCP
+  - name: http
+    containerPort: 8080
+    protocol: TCP
   - name: grpc
     containerPort: 8086
     protocol: TCP
 ingress:
-  enabled: false
+  enabled: true
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
