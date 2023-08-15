@@ -60,14 +60,14 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 		return err
 	}
 	if valuationData != nil {
-		if valuationData.PricingMetadata.Valid {
+		if valuationData.DrivlyPricingMetadata.Valid {
 			drivlyVal := ValuationSet{
 				Vendor:        "drivly",
 				TradeInSource: "drivly",
 				RetailSource:  "drivly",
 				Updated:       valuationData.UpdatedAt.Format(time.RFC3339),
 			}
-			drivlyJSON := valuationData.PricingMetadata.JSON
+			drivlyJSON := valuationData.DrivlyPricingMetadata.JSON
 			requestJSON := valuationData.RequestMetadata.JSON
 			drivlyMileage := gjson.GetBytes(drivlyJSON, "mileage")
 			if drivlyMileage.Exists() {
