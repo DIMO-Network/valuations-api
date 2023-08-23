@@ -18,7 +18,7 @@ type RunValuationCommandHandler interface {
 	Execute(ctx context.Context) error
 }
 
-const NorthAmercanCountries = "USA,CAN,MEX"
+const NorthAmercanCountries = "USA,CAN,MEX,PRI"
 
 type runValuationCommandHandler struct {
 	DBS                      func() *db.ReaderWriter
