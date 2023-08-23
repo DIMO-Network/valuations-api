@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -16,6 +17,8 @@ import (
 type RunValuationCommandHandler interface {
 	Execute(ctx context.Context) error
 }
+
+const NorthAmercanCountries = "USA,CAN,MEX,PRI"
 
 type runValuationCommandHandler struct {
 	DBS                      func() *db.ReaderWriter
@@ -98,7 +101,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 
 				h.inProgress(msg)
 
-				if userDevice.CountryCode == "USA" || userDevice.CountryCode == "CAN" || userDevice.CountryCode == "MEX" {
+				if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
 					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
 						h.logger.Err(err).Str("vin", *userDevice.Vin).Msg("error pulling drivly data")

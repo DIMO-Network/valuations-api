@@ -56,9 +56,11 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 		qm.Where("pricing_metadata is not null or vincario_metadata is not null"),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(c.Context(), vc.dbs().Reader)
+
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
+
 	if valuationData != nil {
 		if valuationData.PricingMetadata.Valid {
 			drivlyVal := ValuationSet{
@@ -101,12 +103,19 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 				logger.Warn().Msg("did not find a drivly trade-in or retail value, or json in unexpected format")
 			}
 		} else if valuationData.VincarioMetadata.Valid {
+			ratio := 1.0
+
 			vincarioVal := ValuationSet{
 				Vendor:        "vincario",
 				TradeInSource: "vincario",
 				RetailSource:  "vincario",
 				Updated:       valuationData.UpdatedAt.Format(time.RFC3339),
 			}
+
+			if strings.EqualFold(ud.CountryCode, "TUR") {
+				ratio = 1.5
+			}
+
 			valJSON := valuationData.VincarioMetadata.JSON
 			requestJSON := valuationData.RequestMetadata.JSON
 			odometerMarket := gjson.GetBytes(valJSON, "market_odometer.odometer_avg")
@@ -121,13 +130,13 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 				vincarioVal.ZipCode = requestPostalCode.String()
 			}
 			// vincario Trade-In - just using the price below mkt mean
-			vincarioVal.TradeIn = int(gjson.GetBytes(valJSON, "market_price.price_below").Int())
+			vincarioVal.TradeIn = int(gjson.GetBytes(valJSON, "market_price.price_below").Float() * ratio)
 			vincarioVal.TradeInAverage = vincarioVal.TradeIn
 			// vincario Retail - just using the price above mkt mean
-			vincarioVal.Retail = int(gjson.GetBytes(valJSON, "market_price.price_above").Int())
+			vincarioVal.Retail = int(gjson.GetBytes(valJSON, "market_price.price_above").Float() * ratio)
 			vincarioVal.RetailAverage = vincarioVal.Retail
 
-			vincarioVal.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Int())
+			vincarioVal.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Float() * ratio)
 			vincarioVal.Currency = gjson.GetBytes(valJSON, "market_price.price_currency").String()
 
 			// often drivly saves valuations with 0 for value, if this is case do not consider it
@@ -136,7 +145,6 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 			} else {
 				logger.Warn().Msg("did not find a market value from vincario, or valJSON in unexpected format")
 			}
-
 		}
 	}
 
