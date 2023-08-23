@@ -12,7 +12,10 @@ docker compose up -d
 go run ./cmd/valuations-api
 ```
 
-## Generating client and server code
+Create DB locally:
+`create database valuations_api with owner dimo;`
+
+## GRPC Generating client and server code
 
 1. Install the protocol compiler plugins for Go using the following commands
 
@@ -45,35 +48,7 @@ _Make sure you're running the docker image (ie. docker compose up)_
 If you get a command not found error with sqlboiler, make sure your go install is correct.
 [Instructions here](https://jimkang.medium.com/install-go-on-mac-with-homebrew-5fa421fc55f5)
 
-## Local development
-
-Importing data: Device definition exports are [here]([url](https://drive.google.com/drive/u/1/folders/1WymEqZo-bCH2Zw-m5L9u_ynMSwPeEARL))
-You can use sqlboiler to import or this command:
-```sh
-psql "host=localhost port=5432 dbname=valuations_api user=dimo password=dimo" -c "\COPY valuations_api.integrations (id, type, style, vendor, created_at, updated_at, refresh_limit_secs, metadata) FROM '/Users/aenglish/Downloads/drive-download-20221020T172636Z-001/integrations.csv' DELIMITER ',' CSV HEADER"
-```
-
-### Starting Kafka locally
-
-`$ brew services start kafka`
-`$ brew services start zookeeper`
-
-This will use the brew services to start kafka locally on port 9092. One nice thing of this vs. docker-compose is that we can use this 
-same instance for all our different locally running services that require kafka. 
-
-### Produce some test messages
-
-`$ go run ./cmd/test-producer`
-
-In current state this only produces a single message, but should be good enough starting point to test locally. 
-
-### Create decoding topic 
-
-`kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic topic.dbc.decoding`
-
-### Sample read messages in the topic
-
-`kafka-console-consumer --bootstrap-server localhost:9092 --topic topic.dbc.decoding --from-beginning`
+# Local development
 
 ## Swagger
 
@@ -82,3 +57,11 @@ Generate swagger docs:
 
 Requirements:
 `go install github.com/swaggo/swag/cmd/swag@latest`
+
+## Migrations
+
+`goose -dir internal/infrastructure/db/migrations create slugs_not_null sql`
+
+Run the migrations up: `go run ./cmd/valuations-api migrate`
+
+Regen the models: `sqlboiler psql --no-tests --wipe`

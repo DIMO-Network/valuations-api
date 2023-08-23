@@ -60,54 +60,30 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 	localLog := d.log.With().Str("vin", vin).Str("deviceDefinitionID", deviceDefinitionID).Logger()
 
-	existingVINData, err := models.Valuations(
-		models.ValuationWhere.Vin.EQ(vin),
-		models.ValuationWhere.VinMetadata.IsNotNull(),
-		qm.OrderBy("updated_at desc"), qm.Limit(1)).
-		One(context.Background(), d.dbs().Writer)
-
-	if err != nil {
-		return ErrorDataPullStatus, err
-	}
-
 	// make sure userdevice exists
 	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}
 
-	// by this point we know we might need to insert drivly raw json data
-	externalVinData := &models.Valuation{
-		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(deviceDef.DeviceDefinitionId),
-		Vin:                vin,
-		UserDeviceID:       null.StringFrom(userDeviceID),
-	}
-
-	// should probably move this up to top as our check for never pulled, then seperate call to get latest pull date for repullWindow check
-	if existingVINData != nil && existingVINData.VinMetadata.Valid {
-		var vinInfo map[string]interface{}
-		err = existingVINData.VinMetadata.Unmarshal(&vinInfo)
-		if err != nil {
-			return ErrorDataPullStatus, errors.Wrap(err, "unable to unmarshal vin metadata")
-		}
-		// update the device attributes via gRPC
-		err2 := d.ddSvc.UpdateDeviceDefAttrs(ctx, deviceDef, vinInfo)
-		if err2 != nil {
-			return ErrorDataPullStatus, err2
-		}
-	}
-
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
 		models.ValuationWhere.Vin.EQ(vin),
-		models.ValuationWhere.PricingMetadata.IsNotNull(),
+		models.ValuationWhere.DrivlyPricingMetadata.IsNotNull(),
 		qm.OrderBy("updated_at desc"), qm.Limit(1)).
 		One(context.Background(), d.dbs().Writer)
 	// just return if already pulled recently for this VIN, but still need to insert never pulled vin - should be uncommon scenario
 	if existingPricingData != nil && existingPricingData.UpdatedAt.Add(repullWindow).After(time.Now()) {
 		localLog.Info().Msgf("already pulled pricing data for vin %s, skipping", vin)
 		return SkippedDataPullStatus, nil
+	}
+
+	// by this point we know we might need to insert drivly valuation
+	valuation := &models.Valuation{
+		ID:                 ksuid.New().String(),
+		DeviceDefinitionID: null.StringFrom(deviceDef.DeviceDefinitionId),
+		Vin:                vin,
+		UserDeviceID:       null.StringFrom(userDeviceID),
 	}
 
 	// get mileage for the drivly request
@@ -155,16 +131,16 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	if userDevice.PostalCode != "" {
 		reqData.ZipCode = &userDevice.PostalCode
 	}
-	_ = externalVinData.RequestMetadata.Marshal(reqData)
+	_ = valuation.RequestMetadata.Marshal(reqData)
 
 	// only pull offers and pricing on every pull.
-	offer, err := d.drivlySvc.GetOffersByVIN(vin, &reqData)
+	offer, err := d.drivlySvc.GetOffersByVIN(vin, &reqData) // future: this will be optional with a new endpoint
 	if err == nil {
-		_ = externalVinData.OfferMetadata.Marshal(offer)
+		_ = valuation.OfferMetadata.Marshal(offer)
 	}
 	pricing, err := d.drivlySvc.GetVINPricing(vin, &reqData)
 	if err == nil {
-		_ = externalVinData.PricingMetadata.Marshal(pricing)
+		_ = valuation.DrivlyPricingMetadata.Marshal(pricing)
 	}
 
 	// check on edmunds data so we can get the style id
@@ -174,7 +150,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		// extra optional data that only needs to be pulled once.
 		edmunds, err := d.drivlySvc.GetEdmundsByVIN(vin) // this is source data that will only be available after pulling vin + pricing
 		if err == nil {
-			_ = externalVinData.EdmundsMetadata.Marshal(edmunds)
+			_ = valuation.EdmundsMetadata.Marshal(edmunds)
 		}
 		// fill in edmunds style_id in our user_device if it exists and not already set. None of these seen as bad errors so just logs
 		if edmunds != nil && userDevice.DeviceStyleId == nil {
@@ -185,7 +161,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		}
 	}
 
-	err = externalVinData.Insert(ctx, d.dbs().Writer, boil.Infer())
+	err = valuation.Insert(ctx, d.dbs().Writer, boil.Infer())
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}

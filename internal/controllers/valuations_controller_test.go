@@ -245,15 +245,11 @@ func SetupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md 
 	if omd, ok := md["OfferMetadata"]; ok {
 		val.OfferMetadata = null.JSONFrom(omd)
 	}
-	if pmd, ok := md["PricingMetadata"]; ok {
-		val.PricingMetadata = null.JSONFrom(pmd)
-	}
+
 	if vmd, ok := md["VincarioMetadata"]; ok {
 		val.VincarioMetadata = null.JSONFrom(vmd)
 	}
-	if bmd, ok := md["BlackbookMetadata"]; ok {
-		val.BlackbookMetadata = null.JSONFrom(bmd)
-	}
+
 	err := val.Insert(context.Background(), pdb.DBS().Writer, boil.Infer())
 	assert.NoError(t, err)
 
