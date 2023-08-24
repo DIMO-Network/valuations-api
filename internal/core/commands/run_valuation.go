@@ -82,6 +82,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 				if err != nil {
 					h.nak(msg)
 					localLog.Err(err).Str("payload", string(msg.Data)).Msg("failed to process valuation request")
+					continue
 				}
 				if err := msg.Ack(); err != nil {
 					localLog.Err(err).Msg("message ack failed")
