@@ -3,6 +3,8 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 
 	"github.com/DIMO-Network/shared/db"
@@ -71,63 +73,15 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 		}
 
 		for _, msg := range msgs {
-			mtd, err := msg.Metadata()
-
-			if err != nil {
-				h.nak(msg, nil)
-				localLog.Info().Err(err).Msg("unable to parse metadata for message")
-				continue
-			}
-
 			select {
 			case <-ctx.Done():
 				return nil
 			default:
-
-				var valuationDecode RunValuationCommandRequest
-
-				if err := json.Unmarshal(msg.Data, &valuationDecode); err != nil {
-					h.nak(msg, &valuationDecode)
-					localLog.Info().Err(err).Msg("unable to parse vin from message")
-					continue
+				err := processMessage(ctx, &localLog, h.userDeviceService, msg)
+				if err != nil {
+					h.nak(msg)
+					localLog.Err(err).Msg("failed to process valuation request")
 				}
-				localLog = localLog.With().Str("vin", valuationDecode.VIN).
-					Str("user_device_id", valuationDecode.UserDeviceID).Logger()
-
-				userDevice, err := h.userDeviceService.GetUserDevice(ctx, valuationDecode.UserDeviceID)
-
-				if err != nil && userDevice.Vin == &valuationDecode.VIN {
-					h.nak(msg, &valuationDecode)
-					localLog.Info().Err(err).Msg("unable to find user device")
-					continue
-				}
-				localLog = localLog.With().Str("country", userDevice.CountryCode).Logger()
-
-				h.inProgress(msg)
-
-				if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
-					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
-					if err != nil {
-						localLog.Err(err).Msg("valuation request - error pulling drivly data")
-					} else {
-						localLog.Info().Msgf("valuation request from Drivly completed wtih status %s", status)
-					}
-				} else {
-					status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
-					if err != nil {
-						localLog.Err(err).Msg("valuation request - error pulling vincario data")
-					} else {
-						localLog.Info().Msgf("valuation request from Vincario completed with status %s", status)
-					}
-				}
-
-				if err := msg.Ack(); err != nil {
-					localLog.Err(err).Msg("message ack failed")
-				}
-
-				localLog.Info().Str("vin", valuationDecode.VIN).
-					Str("user_device_id", valuationDecode.UserDeviceID).
-					Uint64("numDelivered", mtd.NumDelivered).Msg("valuation request completed")
 			}
 		}
 	}
@@ -139,11 +93,60 @@ func (h *runValuationCommandHandler) inProgress(msg *nats.Msg) {
 	}
 }
 
-func (h *runValuationCommandHandler) nak(msg *nats.Msg, params *RunValuationCommandRequest) {
+func (h *runValuationCommandHandler) nak(msg *nats.Msg) {
 	err := msg.Nak()
-	if params == nil {
+	if err != nil {
 		h.logger.Err(err).Msg("message nak failed")
-	} else {
-		h.logger.Err(err).Str("vin", params.VIN).Str("user_device_id", params.UserDeviceID).Msg("message nak failed")
 	}
+}
+
+// processMessage handles the logic to run a valuation request
+func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLog zerolog.Logger, msg *nats.Msg) error {
+	localLog.Info().Str("payload", string(msg.Data)).Msgf("processing valuation request message with subject %s", msg.Subject)
+
+	var valuationDecode RunValuationCommandRequest
+	mtd, err := msg.Metadata()
+	if err != nil {
+		return errors.Wrap(err, "unable to parse metadata for message")
+	}
+	if err := json.Unmarshal(msg.Data, &valuationDecode); err != nil {
+		return errors.Wrap(err, "unable to parse vin from message")
+	}
+	localLog = localLog.With().Str("vin", valuationDecode.VIN).Uint64("numDelivered", mtd.NumDelivered).
+		Str("user_device_id", valuationDecode.UserDeviceID).Logger()
+
+	userDevice, err := h.userDeviceService.GetUserDevice(ctx, valuationDecode.UserDeviceID)
+	if err != nil {
+		return errors.Wrap(err, "unable to find user device. udId: "+valuationDecode.UserDeviceID)
+	}
+	if userDevice.Vin == nil {
+		return errors.New("VIN is nil in userDevice when trying to get valuation. udId: " + valuationDecode.UserDeviceID)
+	}
+	if userDevice.Vin != nil && userDevice.Vin != &valuationDecode.VIN {
+		return fmt.Errorf("VIN mismatch btw what found in userDevice: %s and valuation request: %s", *userDevice.Vin, valuationDecode.VIN)
+	}
+	localLog = localLog.With().Str("country", userDevice.CountryCode).Logger()
+
+	_ = msg.InProgress() // ignore err if can't set to in progress
+
+	if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
+		status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, valuationDecode.VIN)
+		if err != nil {
+			localLog.Err(err).Msg("valuation request - error pulling drivly data")
+		} else {
+			localLog.Info().Msgf("valuation request from Drivly completed with status %s", status)
+		}
+	} else {
+		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
+		if err != nil {
+			localLog.Err(err).Msg("valuation request - error pulling vincario data")
+		} else {
+			localLog.Info().Msgf("valuation request from Vincario completed with status %s", status)
+		}
+	}
+	if err := msg.Ack(); err != nil {
+		return errors.Wrap(err, "message ack failed")
+	}
+
+	return nil
 }
