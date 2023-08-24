@@ -35,7 +35,7 @@ func NewLoadVinVerifiedValuationCommandHandler(dbs func() *db.ReaderWriter, logg
 		logger:                   logger,
 		userDeviceService:        userDeviceService,
 		vincarioValuationService: services.NewVincarioValuationService(dbs, &logger, settings, userDeviceService),
-		drivlyValuationService:   services.NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc),
+		drivlyValuationService:   services.NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc, userDeviceService),
 	}
 }
 

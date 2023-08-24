@@ -39,7 +39,7 @@ func NewRunValuationCommandHandler(dbs func() *db.ReaderWriter, logger zerolog.L
 		logger:                   logger,
 		userDeviceService:        userDeviceService,
 		vincarioValuationService: services.NewVincarioValuationService(dbs, &logger, settings, userDeviceService),
-		drivlyValuationService:   services.NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc),
+		drivlyValuationService:   services.NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc, userDeviceService),
 		NATSSvc:                  natsSvc,
 	}
 }
