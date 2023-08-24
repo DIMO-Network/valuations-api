@@ -91,6 +91,8 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 					localLog.Info().Err(err).Msg("unable to parse vin from message")
 					continue
 				}
+				localLog = localLog.With().Str("vin", valuationDecode.VIN).
+					Str("user_device_id", valuationDecode.UserDeviceID).Logger()
 
 				userDevice, err := h.userDeviceService.GetUserDevice(ctx, valuationDecode.UserDeviceID)
 
@@ -99,22 +101,23 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 					localLog.Info().Err(err).Msg("unable to find user device")
 					continue
 				}
+				localLog = localLog.With().Str("country", userDevice.CountryCode).Logger()
 
 				h.inProgress(msg)
 
 				if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
 					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
-						localLog.Err(err).Str("vin", *userDevice.Vin).Msg("valuation request - error pulling drivly data")
+						localLog.Err(err).Msg("valuation request - error pulling drivly data")
 					} else {
-						localLog.Info().Msgf("valuation request - Drivly %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
+						localLog.Info().Msgf("valuation request from Drivly completed wtih status %s", status)
 					}
 				} else {
 					status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
-						localLog.Err(err).Str("vin", *userDevice.Vin).Msg("valuation request - error pulling vincario data")
+						localLog.Err(err).Msg("valuation request - error pulling vincario data")
 					} else {
-						localLog.Info().Msgf("valuation request - Vincario %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
+						localLog.Info().Msgf("valuation request from Vincario completed with status %s", status)
 					}
 				}
 
