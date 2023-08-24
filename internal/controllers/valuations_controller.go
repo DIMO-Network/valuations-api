@@ -37,9 +37,11 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	userID := helpers.GetUserID(c)
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+
 	if err != nil {
 		return err
 	}
+
 	if ud.UserId != userID {
 		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
