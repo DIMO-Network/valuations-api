@@ -37,7 +37,7 @@ type drivlyValuationService struct {
 	log       *zerolog.Logger
 }
 
-func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, ddSvc DeviceDefinitionsAPIService, uddSvc UserDeviceDataAPIService, udSvc UserDeviceService) DrivlyValuationService {
+func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, ddSvc DeviceDefinitionsAPIService, uddSvc UserDeviceDataAPIService, udSvc UserDeviceAPIService) DrivlyValuationService {
 	return &drivlyValuationService{
 		dbs:       DBS,
 		log:       log,
