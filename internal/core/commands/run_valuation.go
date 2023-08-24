@@ -117,7 +117,7 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 	if userDevice.Vin == nil {
 		return fmt.Errorf("VIN is nil in userDevice when trying to get valuation. udId: %s. userDevice object %+v", valuationDecode.UserDeviceID, userDevice)
 	}
-	if userDevice.Vin != nil && userDevice.Vin != &valuationDecode.VIN {
+	if !strings.EqualFold(*userDevice.Vin, valuationDecode.VIN) {
 		return fmt.Errorf("VIN mismatch btw what found in userDevice: %s and valuation request: %s", *userDevice.Vin, valuationDecode.VIN)
 	}
 	localLog = localLog.With().Str("country", userDevice.CountryCode).Logger()
