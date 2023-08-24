@@ -100,7 +100,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 	vin := "vinny"
 
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
-		"PricingMetadata": []byte(testDrivlyPricingJSON),
+		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, s.pdb)
 
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
@@ -137,7 +137,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 	udID := ksuid.New().String()
 	vin := "vinny"
 	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
-		"PricingMetadata": []byte(testDrivlyPricing2JSON),
+		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, s.pdb)
 	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
 		Id:           udID,
@@ -245,9 +245,11 @@ func SetupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md 
 	if omd, ok := md["OfferMetadata"]; ok {
 		val.OfferMetadata = null.JSONFrom(omd)
 	}
-
 	if vmd, ok := md["VincarioMetadata"]; ok {
 		val.VincarioMetadata = null.JSONFrom(vmd)
+	}
+	if vmd, ok := md["DrivlyPricingMetadata"]; ok {
+		val.DrivlyPricingMetadata = null.JSONFrom(vmd)
 	}
 
 	err := val.Insert(context.Background(), pdb.DBS().Writer, boil.Infer())

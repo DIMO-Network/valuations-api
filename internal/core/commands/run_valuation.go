@@ -95,7 +95,7 @@ func (h *runValuationCommandHandler) nak(msg *nats.Msg) {
 	}
 }
 
-// processMessage handles the logic to run a valuation request
+// processMessage handles the logic to run a valuation request. todo needs test
 func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLog zerolog.Logger, msg *nats.Msg) error {
 	localLog.Info().Str("payload", string(msg.Data)).Msgf("processing valuation request message with subject %s", msg.Subject)
 
