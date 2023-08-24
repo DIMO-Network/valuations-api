@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -53,7 +54,7 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	// Drivly data
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(udi)),
-		qm.Where("pricing_metadata is not null or vincario_metadata is not null"),
+		qm.Where(fmt.Sprintf("%s is not null or %s is not null", models.ValuationColumns.DrivlyPricingMetadata, models.ValuationColumns.VincarioMetadata)),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(c.Context(), vc.dbs().Reader)
 
