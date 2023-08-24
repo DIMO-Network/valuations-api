@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -77,19 +78,13 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			default:
-				err := processMessage(ctx, &localLog, h.userDeviceService, msg)
+				err := h.processMessage(ctx, localLog, msg)
 				if err != nil {
 					h.nak(msg)
-					localLog.Err(err).Msg("failed to process valuation request")
+					localLog.Err(err).Str("payload", string(msg.Data)).Msg("failed to process valuation request")
 				}
 			}
 		}
-	}
-}
-
-func (h *runValuationCommandHandler) inProgress(msg *nats.Msg) {
-	if err := msg.InProgress(); err != nil {
-		h.logger.Err(err).Msg("message in progress failed")
 	}
 }
 
