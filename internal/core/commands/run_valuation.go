@@ -83,6 +83,9 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 					h.nak(msg)
 					localLog.Err(err).Str("payload", string(msg.Data)).Msg("failed to process valuation request")
 				}
+				if err := msg.Ack(); err != nil {
+					localLog.Err(err).Msg("message ack failed")
+				}
 			}
 		}
 	}
@@ -138,9 +141,6 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 		} else {
 			localLog.Info().Msgf("valuation request from Vincario completed with status %s", status)
 		}
-	}
-	if err := msg.Ack(); err != nil {
-		return errors.Wrap(err, "message ack failed")
 	}
 
 	return nil
