@@ -115,7 +115,7 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 		return errors.Wrap(err, "unable to find user device. udId: "+valuationDecode.UserDeviceID)
 	}
 	if userDevice.Vin == nil {
-		return errors.New("VIN is nil in userDevice when trying to get valuation. udId: " + valuationDecode.UserDeviceID)
+		return fmt.Errorf("VIN is nil in userDevice when trying to get valuation. udId: %s. userDevice object %+v", valuationDecode.UserDeviceID, userDevice)
 	}
 	if userDevice.Vin != nil && userDevice.Vin != &valuationDecode.VIN {
 		return fmt.Errorf("VIN mismatch btw what found in userDevice: %s and valuation request: %s", *userDevice.Vin, valuationDecode.VIN)

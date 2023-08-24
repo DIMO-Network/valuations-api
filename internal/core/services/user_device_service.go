@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	gocache "github.com/patrickmn/go-cache"
-
 	"google.golang.org/grpc"
 )
 
@@ -22,12 +19,10 @@ type UserDeviceAPIService interface {
 
 type userDeviceAPIService struct {
 	devicesConn *grpc.ClientConn
-	memoryCache *gocache.Cache
 }
 
 func NewUserDeviceService(devicesConn *grpc.ClientConn) UserDeviceAPIService {
-	c := gocache.New(8*time.Hour, 15*time.Minute)
-	return &userDeviceAPIService{devicesConn: devicesConn, memoryCache: c}
+	return &userDeviceAPIService{devicesConn: devicesConn}
 }
 
 // GetUserDevice gets the userDevice from devices-api, checks in local cache first
@@ -39,17 +34,11 @@ func (das *userDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
 	var userDevice *pb.UserDevice
-	get, found := das.memoryCache.Get("ud_" + userDeviceID)
-	if found {
-		userDevice = get.(*pb.UserDevice)
-	} else {
-		userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
-			Id: userDeviceID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		das.memoryCache.Set("ud_"+userDeviceID, userDevice, time.Hour*24)
+	userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
+		Id: userDeviceID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return userDevice, nil
