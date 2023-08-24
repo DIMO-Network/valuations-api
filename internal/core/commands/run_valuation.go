@@ -58,6 +58,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	localLog := h.logger.With().Str("func", "RunValuation.Execute").Logger()
 
 	for {
 		msgs, err := sub.Fetch(1, nats.MaxWait(h.NATSSvc.AckTimeout))
@@ -74,7 +75,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 
 			if err != nil {
 				h.nak(msg, nil)
-				h.logger.Info().Err(err).Msg("unable to parse metadata for message")
+				localLog.Info().Err(err).Msg("unable to parse metadata for message")
 				continue
 			}
 
@@ -87,7 +88,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 
 				if err := json.Unmarshal(msg.Data, &valuationDecode); err != nil {
 					h.nak(msg, &valuationDecode)
-					h.logger.Info().Err(err).Msg("unable to parse vin from message")
+					localLog.Info().Err(err).Msg("unable to parse vin from message")
 					continue
 				}
 
@@ -95,7 +96,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 
 				if err != nil && userDevice.Vin == &valuationDecode.VIN {
 					h.nak(msg, &valuationDecode)
-					h.logger.Info().Err(err).Msg("unable to find user device")
+					localLog.Info().Err(err).Msg("unable to find user device")
 					continue
 				}
 
@@ -104,24 +105,26 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 				if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
 					status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
-						h.logger.Err(err).Str("vin", *userDevice.Vin).Msg("error pulling drivly data")
+						localLog.Err(err).Str("vin", *userDevice.Vin).Msg("valuation request - error pulling drivly data")
 					} else {
-						h.logger.Info().Msgf("Drivly %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
+						localLog.Info().Msgf("valuation request - Drivly %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
 					}
 				} else {
 					status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
 					if err != nil {
-						h.logger.Err(err).Str("vin", *userDevice.Vin).Msg("error pulling vincario data")
+						localLog.Err(err).Str("vin", *userDevice.Vin).Msg("valuation request - error pulling vincario data")
 					} else {
-						h.logger.Info().Msgf("Vincario %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
+						localLog.Info().Msgf("valuation request - Vincario %s vin: %s, country: %s", status, *userDevice.Vin, userDevice.CountryCode)
 					}
 				}
 
 				if err := msg.Ack(); err != nil {
-					h.logger.Err(err).Msg("message ack failed")
+					localLog.Err(err).Msg("message ack failed")
 				}
 
-				h.logger.Info().Str("vin", valuationDecode.VIN).Str("user_device_id", valuationDecode.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("user device valuation completed")
+				localLog.Info().Str("vin", valuationDecode.VIN).
+					Str("user_device_id", valuationDecode.UserDeviceID).
+					Uint64("numDelivered", mtd.NumDelivered).Msg("valuation request completed")
 			}
 		}
 	}
