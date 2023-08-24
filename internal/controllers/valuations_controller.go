@@ -120,11 +120,11 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 			requestJSON := valuationData.RequestMetadata.JSON
 			odometerMarket := gjson.GetBytes(valJSON, "market_odometer.odometer_avg")
 			if odometerMarket.Exists() {
-				vincarioVal.Mileage = int(odometerMarket.Int())
+				vincarioVal.Mileage = int(odometerMarket.Float() * 1.6)
 				vincarioVal.Odometer = int(odometerMarket.Int())
 				vincarioVal.OdometerUnit = gjson.GetBytes(valJSON, "market_odometer.odometer_unit").String()
 			}
-			// todo this needs to be implemented in the load_valuations script
+			// ! TODO: this needs to be implemented in the load_valuations script
 			requestPostalCode := gjson.GetBytes(requestJSON, "postalCode")
 			if requestPostalCode.Exists() {
 				vincarioVal.ZipCode = requestPostalCode.String()
