@@ -19,7 +19,7 @@ env:
   DEVICE_DATA_GRPC_ADDR: device-data-api-prod:8086
   NATS_URL: nats-prod:4222
 ingress:
-  enabled: false
+  enabled: true
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
