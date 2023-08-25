@@ -43,7 +43,7 @@ func (dc *dependencyContainer) getDeviceService() (services.UserDeviceAPIService
 	if err != nil {
 		dc.logger.Fatal().Err(err).Msg("failed to dial devices grpc")
 	}
-	dc.userDeviceSvc = services.NewUserDeviceService(devicesConn)
+	dc.userDeviceSvc = services.NewUserDeviceService(devicesConn, dc.dbs, dc.logger)
 	return dc.userDeviceSvc, devicesConn
 }
 

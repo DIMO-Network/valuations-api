@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -63,6 +64,36 @@ func (m *MockUserDeviceAPIService) GetUserDevice(ctx context.Context, userDevice
 func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDevice(ctx, userDeviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDevice", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDevice), ctx, userDeviceID)
+}
+
+// GetUserDeviceOffers mocks base method.
+func (m *MockUserDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*models.DeviceOffer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserDeviceOffers", ctx, userDeviceID)
+	ret0, _ := ret[0].(*models.DeviceOffer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserDeviceOffers indicates an expected call of GetUserDeviceOffers.
+func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceOffers(ctx, userDeviceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceOffers", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceOffers), ctx, userDeviceID)
+}
+
+// GetUserDeviceValuations mocks base method.
+func (m *MockUserDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*models.DeviceValuation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserDeviceValuations", ctx, userDeviceID, countryCode)
+	ret0, _ := ret[0].(*models.DeviceValuation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserDeviceValuations indicates an expected call of GetUserDeviceValuations.
+func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceValuations(ctx, userDeviceID, countryCode interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceValuations", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceValuations), ctx, userDeviceID, countryCode)
 }
 
 // UpdateUserDeviceMetadata mocks base method.
