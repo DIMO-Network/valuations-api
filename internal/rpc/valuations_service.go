@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/DIMO-Network/shared/db"
-	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
 	"github.com/rs/zerolog"
@@ -24,19 +23,16 @@ type valuationsService struct {
 	pb.UnimplementedValuationsServiceServer
 	userDeviceService services.UserDeviceAPIService
 	dbs               func() *db.ReaderWriter
-	settings          *config.Settings
 	logger            *zerolog.Logger
 }
 
 func NewValuationsService(
 	dbs func() *db.ReaderWriter,
-	settings *config.Settings,
 	logger *zerolog.Logger,
 	userDeviceService services.UserDeviceAPIService,
 ) pb.ValuationsServiceServer {
 	return &valuationsService{
 		dbs:               dbs,
-		settings:          settings,
 		logger:            logger,
 		userDeviceService: userDeviceService,
 	}

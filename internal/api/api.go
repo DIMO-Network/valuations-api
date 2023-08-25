@@ -48,7 +48,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	}()
 
 	startMonitoringServer(logger, settings)
-	go startGRCPServer(pdb, logger, settings)
+	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
 	app := startWebAPI(logger, settings, pdb, userDeviceSvc)
 	// nolint
 	defer app.Shutdown()
@@ -79,7 +79,7 @@ func startMonitoringServer(logger zerolog.Logger, settings *config.Settings) {
 	logger.Info().Str("port", "8888").Msg("Started monitoring web server.")
 }
 
-func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings) {
+func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService) {
 	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
@@ -94,7 +94,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 		)),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
-	pb.RegisterValuationsServiceServer(server, rpc.NewValuationsService(pdb.DBS, settings, &logger))
+	pb.RegisterValuationsServiceServer(server, rpc.NewValuationsService(pdb.DBS, &logger, userDeviceSvc))
 
 	if err := server.Serve(lis); err != nil {
 		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
