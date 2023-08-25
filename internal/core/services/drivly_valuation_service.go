@@ -91,7 +91,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
 	if err != nil {
 		// just warn if can't get data
-		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location")
+		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
 	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
 	if err != nil {

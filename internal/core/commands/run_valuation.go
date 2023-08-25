@@ -134,14 +134,14 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling drivly data")
 		} else {
-			localLog.Info().Msgf("valuation request from Drivly completed with status %s", status)
+			localLog.Info().Msgf("valuation request from Drivly completed OK with status %s", status)
 		}
 	} else {
 		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, valuationDecode.VIN)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling vincario data")
 		} else {
-			localLog.Info().Msgf("valuation request from Vincario completed with status %s", status)
+			localLog.Info().Msgf("valuation request from Vincario completed OK with status %s", status)
 		}
 	}
 
