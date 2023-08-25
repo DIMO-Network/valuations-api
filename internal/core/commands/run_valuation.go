@@ -99,32 +99,33 @@ func (h *runValuationCommandHandler) nak(msg *nats.Msg) {
 	}
 }
 
-// processMessage handles the logic to run a valuation request. todo needs test
+// processMessage handles the logic to run a valuation request.
 func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLog zerolog.Logger, msg *nats.Msg) error {
 	localLog.Info().Str("payload", string(msg.Data)).Msgf("processing valuation request message with subject %s", msg.Subject)
 
 	var valuationDecode RunValuationCommandRequest
 	mtd, err := msg.Metadata()
+	numDelivered := uint64(0)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse metadata for message")
+		localLog.Warn().Err(err).Msg("unable to parse metadata for message")
+	} else {
+		numDelivered = mtd.NumDelivered
 	}
 	if err := json.Unmarshal(msg.Data, &valuationDecode); err != nil {
 		return errors.Wrap(err, "unable to parse vin from message")
 	}
-	localLog = localLog.With().Str("vin", valuationDecode.VIN).Uint64("numDelivered", mtd.NumDelivered).
+	localLog = localLog.With().Str("vin", valuationDecode.VIN).Uint64("num_delivered", numDelivered).
 		Str("user_device_id", valuationDecode.UserDeviceID).Logger()
 
 	userDevice, err := h.userDeviceService.GetUserDevice(ctx, valuationDecode.UserDeviceID)
 	if err != nil {
 		return errors.Wrap(err, "unable to find user device. udId: "+valuationDecode.UserDeviceID)
 	}
-	if userDevice.Vin == nil {
-		return fmt.Errorf("VIN is nil in userDevice when trying to get valuation. udId: %s. userDevice object %+v", valuationDecode.UserDeviceID, userDevice)
+	// note that the VIN in user device may likely be empty at this point, not sure why but lets just use the payload one
+	if len(valuationDecode.VIN) == 0 {
+		return fmt.Errorf("VIN is empty from message payload. udId: %s. payload object %+v", valuationDecode.UserDeviceID, valuationDecode)
 	}
-	if !strings.EqualFold(*userDevice.Vin, valuationDecode.VIN) {
-		return fmt.Errorf("VIN mismatch btw what found in userDevice: %s and valuation request: %s", *userDevice.Vin, valuationDecode.VIN)
-	}
-	localLog = localLog.With().Str("country", userDevice.CountryCode).Logger()
+	localLog = localLog.With().Str("country", userDevice.CountryCode).Str("device_definition_id", userDevice.DeviceDefinitionId).Logger()
 
 	_ = msg.InProgress() // ignore err if can't set to in progress
 
@@ -136,7 +137,7 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 			localLog.Info().Msgf("valuation request from Drivly completed with status %s", status)
 		}
 	} else {
-		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, *userDevice.Vin)
+		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, valuationDecode.VIN)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling vincario data")
 		} else {
