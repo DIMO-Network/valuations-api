@@ -59,7 +59,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}
-	localLog := d.log.With().Str("vin", vin).Str("deviceDefinitionID", deviceDefinitionID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", deviceDefinitionID).Str("user_device_id", userDeviceID).Logger()
 
 	// make sure userdevice exists
 	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
@@ -90,9 +90,10 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	// get mileage for the drivly request
 	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		// just warn if can't get data
+		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location")
 	}
-	deviceMileage, err := d.getDeviceMileage(userDeviceData, int(deviceDef.Type.Year))
+	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}
@@ -101,7 +102,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		Mileage: deviceMileage,
 	}
 
-	if userDevice.PostalCode == "" {
+	if userDevice.PostalCode == "" && userDeviceData != nil {
 		// need to geodecode the postal code
 		lat := userDeviceData.Latitude
 		long := userDeviceData.Longitude
@@ -181,15 +182,16 @@ func safePtrFloat(f *float64) float64 {
 
 const EstMilesPerYear = 12000.0
 
-func (d *drivlyValuationService) getDeviceMileage(userDeviceData *pb.UserDeviceDataResponse, modelYear int) (mileage *float64, err error) {
+func getDeviceMileage(userDeviceData *pb.UserDeviceDataResponse, modelYear int, currentYear int) (mileage *float64, err error) {
 	var deviceMileage *float64
-	if userDeviceData.Odometer != nil && *userDeviceData.Odometer > 0 {
+
+	if userDeviceData != nil && userDeviceData.Odometer != nil && *userDeviceData.Odometer > 0 {
 		deviceMileage = userDeviceData.Odometer
 	}
 
-	if userDeviceData.Odometer == nil {
+	if userDeviceData == nil || userDeviceData.Odometer == nil {
 		deviceMileage = new(float64)
-		yearDiff := time.Now().Year() - modelYear
+		yearDiff := currentYear - modelYear
 		switch {
 		case yearDiff > 0:
 			// Past model year

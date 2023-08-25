@@ -34,6 +34,14 @@ func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter, u
 	}
 }
 
+// GetValuations godoc
+// @Description gets valuations for a particular user device. Includes only price valuations, not offers. only gets the latest valuation.
+// @Tags        user-devices
+// @Produce     json
+// @Param       userDeviceID path string true "user device id"
+// @Success     200 {object} controllers.DeviceValuation
+// @Security    BearerAuth
+// @Router      /user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	userID := helpers.GetUserID(c)
@@ -152,6 +160,13 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	return c.JSON(dVal)
 }
 
+// GetOffers godoc
+// @Description gets offers for a particular user device
+// @Tags        user-devices
+// @Produce     json
+// @Success     200 {object} controllers.DeviceOffer
+// @Security    BearerAuth
+// @Router      /user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	userID := helpers.GetUserID(c)
