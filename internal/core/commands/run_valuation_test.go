@@ -3,13 +3,14 @@ package commands
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/segmentio/ksuid"
-	"testing"
 )
 
 const migrationsDirRelPath = "../../infrastructure/db/migrations"
@@ -18,10 +19,9 @@ func Test_runValuationCommandHandler_processMessage(t *testing.T) {
 	// need db
 	// need mocks
 	ctx := context.Background()
-	pdb, container := dbtest.StartContainerDatabase(ctx, "valuations_api", t, migrationsDirRelPath)
+	pdb, _ := dbtest.StartContainerDatabase(ctx, "valuations_api", t, migrationsDirRelPath)
 	logger := dbtest.Logger()
 	mockCtrl := gomock.NewController(t)
-	defer container.Terminate(ctx)
 
 	userDeviceSvc := mock_services.NewMockUserDeviceAPIService(mockCtrl)
 	vincarioSvc := mock_services.NewMockVincarioValuationService(mockCtrl)
