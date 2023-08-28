@@ -80,14 +80,15 @@ func TestUserDeviceServiceTestSuite(t *testing.T) {
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	// setup
 	ddID := ksuid.New().String()
-	vin := "VINDIESEL12312322"
-	userDeviceID := ksuid.New().String()
-	_ = SetupCreateValuationsData(s.T(), ddID, userDeviceID, vin, map[string][]byte{
+	udID := ksuid.New().String()
+	vin := "vinny"
+
+	_ = SetupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, s.pdb)
 
 	// test
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, userDeviceID, vin)
+	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), valuations, 1)
 
