@@ -89,8 +89,8 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 
 	// test
 	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
+
 	assert.NoError(s.T(), err)
-	assert.Len(s.T(), valuations, 1)
 
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
 	assert.Equal(s.T(), 49957, valuations.ValuationSets[0].Mileage)
@@ -165,18 +165,18 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 	assert.Equal(s.T(), "drivly", deviceOffers.OfferSets[0].Source)
 	assert.Equal(s.T(), 3, len(deviceOffers.OfferSets[0].Offers))
 
-	var vroomOffer *core.Offer
-	var carvanaOffer *core.Offer
-	var carmaxOffer *core.Offer
+	var vroomOffer core.Offer
+	var carvanaOffer core.Offer
+	var carmaxOffer core.Offer
 
 	for _, offer := range deviceOffers.OfferSets[0].Offers {
 		switch offer.Vendor {
 		case "vroom":
-			vroomOffer = &offer
+			vroomOffer = offer
 		case "carvana":
-			carvanaOffer = &offer
+			carvanaOffer = offer
 		case "carmax":
-			carmaxOffer = &offer
+			carmaxOffer = offer
 		}
 	}
 
