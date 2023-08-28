@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
@@ -24,7 +23,6 @@ const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 type ValuationsControllerTestSuite struct {
 	suite.Suite
 	controller    *ValuationsController
-	container     testcontainers.Container
 	ctx           context.Context
 	mockCtrl      *gomock.Controller
 	app           *fiber.App
