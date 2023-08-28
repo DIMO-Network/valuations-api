@@ -18,7 +18,6 @@ import (
 )
 
 const migrationsDirRelPath = "../infrastructure/db/migrations"
-const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type UserDeviceServiceTestSuite struct {
 	suite.Suite
