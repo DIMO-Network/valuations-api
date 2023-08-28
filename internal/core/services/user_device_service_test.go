@@ -181,7 +181,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 	}
 
 	assert.Equal(s.T(), "Error in v1/acquisition/appraisal POST",
-		vroomOffer.DeclineReason)
+		vroomOffer.Error)
 	assert.Equal(s.T(), 10123, carvanaOffer.Price)
 	assert.Equal(s.T(), "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer.",
 		carmaxOffer.DeclineReason)
