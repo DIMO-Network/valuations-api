@@ -129,7 +129,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store,
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS, userDeviceSvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
@@ -9,15 +8,13 @@ import (
 )
 
 type ValuationsController struct {
-	dbs               func() *db.ReaderWriter
 	log               *zerolog.Logger
 	userDeviceService services.UserDeviceAPIService
 }
 
-func NewValuationsController(log *zerolog.Logger, dbs func() *db.ReaderWriter, userDeviceSvc services.UserDeviceAPIService) *ValuationsController {
+func NewValuationsController(log *zerolog.Logger, userDeviceSvc services.UserDeviceAPIService) *ValuationsController {
 	return &ValuationsController{
 		log:               log,
-		dbs:               dbs,
 		userDeviceService: userDeviceSvc,
 	}
 }

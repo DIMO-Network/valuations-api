@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/DIMO-Network/shared/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
@@ -20,12 +19,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-const migrationsDirRelPath = "../infrastructure/db/migrations"
 const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
-	pdb           db.Store
 	controller    *ValuationsController
 	container     testcontainers.Container
 	ctx           context.Context
@@ -37,7 +34,6 @@ type ValuationsControllerTestSuite struct {
 // SetupSuite starts container db
 func (s *ValuationsControllerTestSuite) SetupSuite() {
 	s.ctx = context.Background()
-	s.pdb, s.container = dbtest.StartContainerDatabase(s.ctx, "valuations_api", s.T(), migrationsDirRelPath)
 	logger := dbtest.Logger()
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
@@ -48,7 +44,7 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
-	controller := NewValuationsController(logger, s.pdb.DBS, s.userDeviceSvc)
+	controller := NewValuationsController(logger, s.userDeviceSvc)
 	app := dbtest.SetupAppFiber(*logger)
 	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
 	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
@@ -63,7 +59,6 @@ func (s *ValuationsControllerTestSuite) SetupTest() {
 
 // TearDownTest after each test truncate tables
 func (s *ValuationsControllerTestSuite) TearDownTest() {
-	dbtest.TruncateTables(s.pdb.DBS().Writer.DB, s.T())
 }
 
 // TearDownSuite cleanup at end by terminating container
