@@ -8,6 +8,7 @@ import (
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
@@ -92,6 +93,31 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 		CountryCode:  "USA",
 	}, nil)
 
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+		ValuationSets: []core.ValuationSet{
+			{
+				Vendor:           "vincario",
+				Updated:          "",
+				Mileage:          30137,
+				ZipCode:          "",
+				TradeInSource:    "",
+				TradeIn:          44800,
+				TradeInClean:     0,
+				TradeInAverage:   0,
+				TradeInRough:     0,
+				RetailSource:     "",
+				Retail:           55200,
+				RetailClean:      0,
+				RetailAverage:    0,
+				RetailRough:      0,
+				OdometerUnit:     "km",
+				Odometer:         30137,
+				UserDisplayPrice: 51440,
+				Currency:         "EUR",
+			},
+		},
+	})
+
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
 
@@ -111,6 +137,31 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 		Vin:          &vin,
 		CountryCode:  "USA",
 	}, nil)
+
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+		ValuationSets: []core.ValuationSet{
+			{
+				Vendor:           "vincario",
+				Updated:          "",
+				Mileage:          30137,
+				ZipCode:          "",
+				TradeInSource:    "",
+				TradeIn:          44800,
+				TradeInClean:     0,
+				TradeInAverage:   0,
+				TradeInRough:     0,
+				RetailSource:     "",
+				Retail:           55200,
+				RetailClean:      0,
+				RetailAverage:    0,
+				RetailRough:      0,
+				OdometerUnit:     "km",
+				Odometer:         30137,
+				UserDisplayPrice: 51440,
+				Currency:         "EUR",
+			},
+		},
+	})
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
@@ -132,6 +183,32 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 		CountryCode:  "USA",
 	}, nil)
 
+	// ? TODO: check how to retrieve this from db in configuration
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+		ValuationSets: []core.ValuationSet{
+			{
+				Vendor:           "vincario",
+				Updated:          "",
+				Mileage:          30137,
+				ZipCode:          "",
+				TradeInSource:    "",
+				TradeIn:          44800,
+				TradeInClean:     0,
+				TradeInAverage:   0,
+				TradeInRough:     0,
+				RetailSource:     "",
+				Retail:           55200,
+				RetailClean:      0,
+				RetailAverage:    0,
+				RetailRough:      0,
+				OdometerUnit:     "km",
+				Odometer:         30137,
+				UserDisplayPrice: 51440,
+				Currency:         "EUR",
+			},
+		},
+	})
+
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request, 2000)
 
@@ -139,7 +216,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 }
 
 func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
-	// arrange db, insert some user_devices
+
 	udID := ksuid.New().String()
 	vin := "vinny"
 
@@ -150,6 +227,19 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 		Vin:          &vin,
 		CountryCode:  "USA",
 	}, nil)
+
+	// ? TODO: check how to retrieve this from db in configuration
+	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), udID).Return(&core.DeviceOffer{
+		OfferSets: []core.OfferSet{
+			{
+				Source:  "drivly",
+				Updated: "",
+				Mileage: 0,
+				ZipCode: "",
+				Offers:  []core.Offer{{Vendor: "vroom", Price: 10123, Error: "Error in v1/acquisition/appraisal POST", DeclineReason: ""}, {Vendor: "carvana", Price: 10123, URL: "", Error: "", Grade: "", DeclineReason: "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer."}, {Vendor: "carmax", Price: 10123, DeclineReason: "", Error: "Error in v1/acquisition/appraisal POST"}},
+			},
+		},
+	})
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
 	response, err := s.app.Test(request)
