@@ -116,7 +116,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 				Currency:         "EUR",
 			},
 		},
-	})
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
@@ -161,7 +161,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 				Currency:         "EUR",
 			},
 		},
-	})
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request)
@@ -207,7 +207,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 				Currency:         "EUR",
 			},
 		},
-	})
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
 	response, _ := s.app.Test(request, 2000)
@@ -239,7 +239,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 				Offers:  []core.Offer{{Vendor: "vroom", Price: 10123, Error: "Error in v1/acquisition/appraisal POST", DeclineReason: ""}, {Vendor: "carvana", Price: 10123, URL: "", Error: "", Grade: "", DeclineReason: "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer."}, {Vendor: "carmax", Price: 10123, DeclineReason: "", Error: "Error in v1/acquisition/appraisal POST"}},
 			},
 		},
-	})
+	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
 	response, err := s.app.Test(request)
