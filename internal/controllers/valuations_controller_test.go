@@ -63,10 +63,6 @@ func (s *ValuationsControllerTestSuite) TearDownTest() {
 
 // TearDownSuite cleanup at end by terminating container
 func (s *ValuationsControllerTestSuite) TearDownSuite() {
-	fmt.Printf("shutting down postgres at with session: %s \n", s.container.SessionID())
-	if err := s.container.Terminate(s.ctx); err != nil {
-		s.T().Fatal(err)
-	}
 	s.mockCtrl.Finish() // might need to do mockctrl on every test, and refactor setup into one method
 }
 

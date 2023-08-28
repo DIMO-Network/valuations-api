@@ -17,7 +17,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-const migrationsDirRelPath = "../infrastructure/db/migrations"
+const migrationsDirRelPath = "../../infrastructure/db/migrations"
 
 type UserDeviceServiceTestSuite struct {
 	suite.Suite
