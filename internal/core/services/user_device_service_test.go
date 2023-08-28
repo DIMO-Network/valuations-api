@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DIMO-Network/shared/db"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/segmentio/ksuid"
@@ -96,7 +97,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	assert.Equal(s.T(), "miles", valuations.ValuationSets[0].OdometerUnit)
 	assert.Equal(s.T(), 54123, valuations.ValuationSets[0].Retail)
 	//54123 + 50151 / 2
-	assert.Equal(s.T(), 52137, valuations.ValuationSets[0].RetailAverage)
+	assert.Equal(s.T(), 52137, valuations.ValuationSets[0].UserDisplayPrice)
 	assert.Equal(s.T(), "USD", valuations.ValuationSets[0].Currency)
 	// 49040 + 52173 + 49241 / 3 = 50151
 	assert.Equal(s.T(), 50151, valuations.ValuationSets[0].TradeIn)
@@ -162,11 +163,27 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 	assert.Equal(s.T(), 1, len(deviceOffers.OfferSets))
 	assert.Equal(s.T(), "drivly", deviceOffers.OfferSets[0].Source)
 	assert.Equal(s.T(), 3, len(deviceOffers.OfferSets[0].Offers))
+
+	var vroomOffer *core.Offer
+	var carvanaOffer *core.Offer
+	var carmaxOffer *core.Offer
+
+	for _, offer := range deviceOffers.OfferSets[0].Offers {
+		switch offer.Vendor {
+		case "vroom":
+			vroomOffer = &offer
+		case "carvana":
+			carvanaOffer = &offer
+		case "carmax":
+			carmaxOffer = &offer
+		}
+	}
+
 	assert.Equal(s.T(), "Error in v1/acquisition/appraisal POST",
-		deviceOffers.OfferSets[0].Offers[0].DeclineReason)
-	assert.Equal(s.T(), 10123, deviceOffers.OfferSets[0].Offers[1].Price)
+		vroomOffer.DeclineReason)
+	assert.Equal(s.T(), 10123, carvanaOffer.Price)
 	assert.Equal(s.T(), "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer.",
-		deviceOffers.OfferSets[0].Offers[2].DeclineReason)
+		carmaxOffer.DeclineReason)
 }
 
 func SetupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md map[string][]byte, pdb db.Store) *models.Valuation {
