@@ -69,7 +69,7 @@ func TestValuationsControllerTestSuite(t *testing.T) {
 	suite.Run(t, new(ValuationsControllerTestSuite))
 }
 
-func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
+func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly1() {
 	// arrange db, insert some user_devices
 	udID := ksuid.New().String()
 	vin := "vinny"
@@ -85,7 +85,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
-				Vendor:           "vincario",
+				Vendor:           "drivly",
 				Updated:          "",
 				Mileage:          30137,
 				ZipCode:          "",
@@ -102,7 +102,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 				OdometerUnit:     "km",
 				Odometer:         30137,
 				UserDisplayPrice: 51440,
-				Currency:         "EUR",
+				Currency:         "USD",
 			},
 		},
 	}, nil)
@@ -113,7 +113,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format1() {
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
-func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
+func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 	// this is the other format we're seeing coming from drivly for pricing
 	// arrange db, insert some user_devices
 	udID := ksuid.New().String()
@@ -130,7 +130,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
-				Vendor:           "vincario",
+				Vendor:           "drivly",
 				Updated:          "",
 				Mileage:          30137,
 				ZipCode:          "",
@@ -147,7 +147,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Format2() {
 				OdometerUnit:     "km",
 				Odometer:         30137,
 				UserDisplayPrice: 51440,
-				Currency:         "EUR",
+				Currency:         "USD",
 			},
 		},
 	}, nil)
@@ -169,11 +169,10 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
-		CountryCode:  "USA",
+		CountryCode:  "DEU",
 	}, nil)
 
-	// ? TODO: check how to retrieve this from db in configuration
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "DEU").Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "vincario",
@@ -217,7 +216,6 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 		CountryCode:  "USA",
 	}, nil)
 
-	// ? TODO: check how to retrieve this from db in configuration
 	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), udID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{
 			{
