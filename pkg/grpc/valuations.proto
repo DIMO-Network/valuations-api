@@ -8,9 +8,65 @@ package valuations;
 
 service ValuationsService {
   rpc GetAllValuations(google.protobuf.Empty) returns (ValuationResponse);
+  rpc GetUserDeviceValuation(DeviceValuationRequest) returns (DeviceValuation);
+  rpc GetUserDeviceOffer(DeviceOfferRequest) returns (DeviceOffer);
 }
 
 message ValuationResponse {
   float total = 1;
   float growthPercentage = 2;
+}
+
+message DeviceValuationRequest {
+  string userDeviceId = 1;
+}
+
+message DeviceOfferRequest {
+  string userDeviceId = 1;
+}
+
+message DeviceValuation {
+  repeated ValuationSet valuationSets = 1;
+}
+
+message DeviceOffer {
+  repeated OfferSet offerSets = 1;
+}
+
+message ValuationSet {
+  string vendor = 1;
+  string updated = 2;
+  int32 mileage = 3;
+  string zipCode = 4;
+  string tradeInSource = 5;
+  int32 tradeIn = 6;
+  int32 tradeInClean = 7;
+  int32 tradeInAverage = 8;
+  int32 tradeInRough = 9;
+  string RetailSource = 10;
+  int32 retail = 11;
+  int32 retailClean = 12;
+  int32 retailAverage = 13;
+  int32 retailRough = 14;
+  string odometerUnit = 15;
+  int32 odometer = 16;
+  int32 userDisplayPrice = 17;
+  string currency = 18;
+}
+
+message OfferSet {
+  string source = 1;
+  string updated = 2;
+  int32 mileage = 3;
+  string zipCode = 4;
+  repeated Offer offers = 5;
+}
+
+message Offer {
+  string vendor = 1;
+  int32 price = 2;
+  string url = 3;
+  string error = 4;
+  string grade = 5;
+  string declineReason = 6;
 }

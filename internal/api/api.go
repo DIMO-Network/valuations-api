@@ -48,8 +48,8 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	}()
 
 	startMonitoringServer(logger, settings)
-	go startGRCPServer(pdb, logger, settings)
-	app := startWebAPI(logger, settings, pdb, userDeviceSvc)
+	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -79,7 +79,7 @@ func startMonitoringServer(logger zerolog.Logger, settings *config.Settings) {
 	logger.Info().Str("port", "8888").Msg("Started monitoring web server.")
 }
 
-func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings) {
+func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService) {
 	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
@@ -94,7 +94,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 		)),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
-	pb.RegisterValuationsServiceServer(server, rpc.NewValuationsService(pdb.DBS, settings, &logger))
+	pb.RegisterValuationsServiceServer(server, rpc.NewValuationsService(pdb.DBS, &logger, userDeviceSvc))
 
 	if err := server.Serve(lis); err != nil {
 		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
@@ -108,7 +108,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store, userDeviceSvc services.UserDeviceAPIService) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -129,7 +129,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb db.Store,
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, pdb.DBS, userDeviceSvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{

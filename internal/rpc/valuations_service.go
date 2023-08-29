@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/DIMO-Network/shared/db"
-	"github.com/DIMO-Network/valuations-api/internal/config"
+	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
@@ -21,16 +21,20 @@ const (
 
 type valuationsService struct {
 	pb.UnimplementedValuationsServiceServer
-	dbs      func() *db.ReaderWriter
-	settings *config.Settings
-	logger   *zerolog.Logger
+	userDeviceService services.UserDeviceAPIService
+	dbs               func() *db.ReaderWriter
+	logger            *zerolog.Logger
 }
 
-func NewValuationsService(dbs func() *db.ReaderWriter, settings *config.Settings, logger *zerolog.Logger) pb.ValuationsServiceServer {
+func NewValuationsService(
+	dbs func() *db.ReaderWriter,
+	logger *zerolog.Logger,
+	userDeviceService services.UserDeviceAPIService,
+) pb.ValuationsServiceServer {
 	return &valuationsService{
-		dbs:      dbs,
-		settings: settings,
-		logger:   logger,
+		dbs:               dbs,
+		logger:            logger,
+		userDeviceService: userDeviceService,
 	}
 }
 
@@ -104,4 +108,85 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 		Total:            float32(totalValuation),
 		GrowthPercentage: float32(growthPercentage),
 	}, nil
+}
+
+func (s *valuationsService) GetUserDeviceValuation(ctx context.Context, req *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
+
+	udi := req.UserDeviceId
+
+	ud, err := s.userDeviceService.GetUserDevice(ctx, udi)
+
+	if err != nil {
+		return nil, err
+	}
+
+	valuations, err := s.userDeviceService.GetUserDeviceValuations(ctx, udi, ud.CountryCode)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rpcValuations := pb.DeviceValuation{
+		ValuationSets: make([]*pb.ValuationSet, len(valuations.ValuationSets)),
+	}
+
+	for i, v := range valuations.ValuationSets {
+		rpcValuations.ValuationSets[i] = &pb.ValuationSet{
+			Vendor:         v.Vendor,
+			Updated:        v.Updated,
+			Mileage:        int32(v.Mileage),
+			ZipCode:        v.ZipCode,
+			TradeInSource:  v.TradeInSource,
+			TradeIn:        int32(v.TradeIn),
+			TradeInClean:   int32(v.TradeInClean),
+			TradeInAverage: int32(v.TradeInAverage),
+			TradeInRough:   int32(v.TradeInRough),
+			RetailSource:   v.RetailSource,
+			Retail:         int32(v.Retail),
+			RetailClean:    int32(v.RetailClean),
+			RetailAverage:  int32(v.RetailAverage),
+			RetailRough:    int32(v.RetailRough),
+			OdometerUnit:   v.OdometerUnit,
+			Odometer:       int32(v.Odometer),
+			Currency:       v.Currency,
+		}
+	}
+
+	return &rpcValuations, nil
+}
+
+func (s *valuationsService) GetUserDeviceOffer(ctx context.Context, req *pb.DeviceOfferRequest) (*pb.DeviceOffer, error) {
+
+	offers, err := s.userDeviceService.GetUserDeviceOffers(ctx, req.UserDeviceId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rpcOffers := pb.DeviceOffer{
+		OfferSets: make([]*pb.OfferSet, len(offers.OfferSets)),
+	}
+
+	for i, os := range offers.OfferSets {
+		rpcOffers.OfferSets[i] = &pb.OfferSet{
+			Source:  os.Source,
+			Updated: os.Updated,
+			Mileage: int32(os.Mileage),
+			ZipCode: os.ZipCode,
+			Offers:  make([]*pb.Offer, len(os.Offers)),
+		}
+
+		for j, o := range os.Offers {
+			rpcOffers.OfferSets[i].Offers[j] = &pb.Offer{
+				Vendor:        o.Vendor,
+				Price:         int32(o.Price),
+				Url:           o.URL,
+				Error:         o.Error,
+				Grade:         o.Grade,
+				DeclineReason: o.DeclineReason,
+			}
+		}
+	}
+
+	return &rpcOffers, nil
 }
