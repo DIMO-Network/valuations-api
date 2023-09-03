@@ -16,6 +16,7 @@ spec:
       backoffLimit: 1
       concurrencyPolicy: Forbid
       successfulJobsHistoryLimit: 4
+      activeDeadlineSeconds: 129600  # 36 hours, set to expected max runtime + some buffer
       template:
         metadata:
           annotations:
