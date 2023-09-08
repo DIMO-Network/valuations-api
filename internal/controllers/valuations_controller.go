@@ -137,7 +137,7 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	select {
 	case offer := <-ch:
 		return c.JSON(offer)
-	case <-time.After(10 * time.Second):
+	case <-time.After(50 * time.Second):
 		return fiber.NewError(fiber.StatusRequestTimeout, "request timed out")
 	}
 }
