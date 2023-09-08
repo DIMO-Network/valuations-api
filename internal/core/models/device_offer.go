@@ -65,7 +65,6 @@ func DecodeOfferFromJSON(drivlyJSON []byte) OfferSet {
 					val = gjson.GetBytes(drivlyJSON, value.String()+".error.title")
 					if val.Exists() {
 						offer.Error = val.String()
-						// reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(val.String()))
 					}
 				}
 			default: // for everything else

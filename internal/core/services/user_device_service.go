@@ -116,7 +116,7 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 	}
 
 	if drivlyVinData != nil {
-		drivlyOffers := core.DecodeOfferFromJSON(drivlyVinData.DrivlyPricingMetadata.JSON)
+		drivlyOffers := core.DecodeOfferFromJSON(drivlyVinData.OfferMetadata.JSON)
 
 		requestJSON := drivlyVinData.RequestMetadata.JSON
 		drivlyOffers.Updated = drivlyVinData.UpdatedAt.Format(time.RFC3339)
