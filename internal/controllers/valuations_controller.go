@@ -91,8 +91,6 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
-	// long polling call to drivly api to get instant offer
-	// return instant offer
 	udi := c.Params("userDeviceID")
 	userID := helpers.GetUserID(c)
 
