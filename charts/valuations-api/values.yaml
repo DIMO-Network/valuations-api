@@ -40,7 +40,9 @@ env:
   NATS_URL: nats-dev:4222
   NATS_STREAM_NAME: DD_VALUATION_TASKS
   NATS_VALUATION_SUBJECT: dd_valuation_tasks
-  NATS_DURABLE_CONSUMER: dd-valuation-task-consumer
+  NATS_VALUATION_DURABLE_CONSUMER: dd-valuation-task-consumer
+  NATS_OFFER_SUBJECT: dd_offer_tasks
+  NATS_OFFER_DURABLE_CONSUMER: dd-offer-task-consumer
   NATS_ACK_TIMEOUT: 2m
   VINCARIO_API_URL: https://api.vindecoder.eu/3.2
   DRIVLY_VIN_API_URL: https://vin.dev.driv.ly

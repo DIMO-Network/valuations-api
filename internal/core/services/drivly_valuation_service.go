@@ -135,11 +135,6 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 	_ = valuation.RequestMetadata.Marshal(reqData)
 
-	// only pull offers and pricing on every pull.
-	offer, err := d.drivlySvc.GetOffersByVIN(vin, &reqData) // future: this will be optional with a new endpoint
-	if err == nil {
-		_ = valuation.OfferMetadata.Marshal(offer)
-	}
 	pricing, err := d.drivlySvc.GetVINPricing(vin, &reqData)
 	if err == nil {
 		_ = valuation.DrivlyPricingMetadata.Marshal(pricing)

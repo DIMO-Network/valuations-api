@@ -38,7 +38,7 @@ type Offer struct {
 	DeclineReason string `json:"declineReason,omitempty"`
 }
 
-func DecodeOfferFromJson(drivlyJSON []byte) OfferSet {
+func DecodeOfferFromJSON(drivlyJSON []byte) OfferSet {
 	drivlyOffers := OfferSet{}
 	drivlyOffers.Source = "drivly"
 

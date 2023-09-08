@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -9,12 +10,14 @@ import (
 )
 
 type NATSService struct {
-	log              *zerolog.Logger
-	JetStream        nats.JetStreamContext
-	JetStreamName    string
-	JetStreamSubject string
-	AckTimeout       time.Duration
-	DurableConsumer  string
+	log                      *zerolog.Logger
+	JetStream                nats.JetStreamContext
+	JetStreamName            string
+	ValuationSubject         string
+	OfferSubject             string
+	AckTimeout               time.Duration
+	ValuationDurableConsumer string
+	OfferDurableConsumer     string
 }
 
 func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSService, error) {
@@ -31,10 +34,24 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 	_, err = js.AddStream(&nats.StreamConfig{
 		Name:      settings.NATSStreamName,
 		Retention: nats.WorkQueuePolicy,
-		Subjects:  []string{settings.NATSValuationSubject},
+		Subjects:  []string{settings.NATSValuationSubject, settings.NATSOfferSubject},
 	})
 
 	if err != nil {
+
+		if errors.Is(err, nats.ErrStreamNameAlreadyInUse) {
+
+			_, err = js.UpdateStream(&nats.StreamConfig{
+				Name:      settings.NATSStreamName,
+				Retention: nats.WorkQueuePolicy,
+				Subjects:  []string{settings.NATSValuationSubject, settings.NATSOfferSubject},
+			})
+
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		return nil, err
 	}
 
@@ -44,12 +61,15 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 	}
 
 	natsSvc := &NATSService{
-		log:              log,
-		JetStream:        js,
-		JetStreamName:    settings.NATSStreamName,
-		JetStreamSubject: settings.NATSValuationSubject,
-		AckTimeout:       to,
-		DurableConsumer:  settings.NATSDurableConsumer}
+		log:                      log,
+		JetStream:                js,
+		JetStreamName:            settings.NATSStreamName,
+		ValuationSubject:         settings.NATSValuationSubject,
+		OfferSubject:             settings.NATSOfferSubject,
+		AckTimeout:               to,
+		ValuationDurableConsumer: settings.NATSValuationDurableConsumer,
+		OfferDurableConsumer:     settings.NATSOfferDurableConsumer,
+	}
 
 	return natsSvc, nil
 }

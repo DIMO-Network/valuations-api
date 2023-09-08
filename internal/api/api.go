@@ -47,11 +47,18 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 		}
 	}()
 
+	go func() {
+		err := handler.ExecuteOfferSync(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("unable to start nats consumer")
+		}
+	}()
+
 	drivlySrv := services.NewDrivlyAPIService(settings, pdb.DBS)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, drivlySrv)
+	app := startWebAPI(logger, settings, userDeviceSvc, drivlySrv, *natsSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -110,7 +117,11 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService, drivlyService services.DrivlyAPIService) *fiber.App {
+func startWebAPI(logger zerolog.Logger,
+	settings *config.Settings,
+	userDeviceSvc services.UserDeviceAPIService,
+	drivlyService services.DrivlyAPIService,
+	natsSrvc services.NATSService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -131,7 +142,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlyService)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlyService, &natsSrvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{

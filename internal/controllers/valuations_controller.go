@@ -16,13 +16,18 @@ type ValuationsController struct {
 	log               *zerolog.Logger
 	userDeviceService services.UserDeviceAPIService
 	drivlyService     services.DrivlyAPIService
+	natsService       *services.NATSService
 }
 
-func NewValuationsController(log *zerolog.Logger, userDeviceSvc services.UserDeviceAPIService, drivlyService services.DrivlyAPIService) *ValuationsController {
+func NewValuationsController(log *zerolog.Logger,
+	userDeviceSvc services.UserDeviceAPIService,
+	drivlyService services.DrivlyAPIService,
+	natsService *services.NATSService) *ValuationsController {
 	return &ValuationsController{
 		log:               log,
 		userDeviceService: userDeviceSvc,
 		drivlyService:     drivlyService,
+		natsService:       natsService,
 	}
 }
 
@@ -143,13 +148,21 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 			OfferSets: []core.OfferSet{},
 		}
 
-		offerJson, err := json.Marshal(offer["offer"].(map[string]interface{}))
+		offerJSON, err := json.Marshal(offer["offer"].(map[string]interface{}))
 
 		if err != nil {
 			return err
 		}
 
-		offerSet := core.DecodeOfferFromJson(offerJson)
+		ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, offerJSON)
+
+		if err != nil {
+			vc.log.Err(err).Msg("failed to publish offer")
+		} else {
+			vc.log.Info().Msgf("published offer with id: %v", ack.Sequence)
+		}
+
+		offerSet := core.DecodeOfferFromJSON(offerJSON)
 
 		dOffer.OfferSets = append(dOffer.OfferSets, offerSet)
 		return c.JSON(dOffer)
