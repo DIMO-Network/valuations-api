@@ -36,13 +36,15 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
 	s.userDeviceSvc = mock_services.NewMockUserDeviceAPIService(mockCtrl)
+
 	var err error
 
 	if err != nil {
 		s.T().Fatal(err)
 	}
 
-	controller := NewValuationsController(logger, s.userDeviceSvc)
+	//TODO: check for drivly service api mock
+	controller := NewValuationsController(logger, s.userDeviceSvc, nil)
 	app := dbtest.SetupAppFiber(*logger)
 	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
 	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
