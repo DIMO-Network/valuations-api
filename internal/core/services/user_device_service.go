@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -117,11 +116,11 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 	}
 
 	if drivlyVinData != nil {
-		drivlyOffers := core.OfferSet{}
-		drivlyOffers.Source = "drivly"
-		drivlyJSON := drivlyVinData.OfferMetadata.JSON
+		drivlyOffers := core.DecodeOfferFromJson(drivlyVinData.DrivlyPricingMetadata.JSON)
+
 		requestJSON := drivlyVinData.RequestMetadata.JSON
 		drivlyOffers.Updated = drivlyVinData.UpdatedAt.Format(time.RFC3339)
+
 		requestMileage := gjson.GetBytes(requestJSON, "mileage")
 		if requestMileage.Exists() {
 			drivlyOffers.Mileage = int(requestMileage.Int())
@@ -130,40 +129,7 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 		if requestZipCode.Exists() {
 			drivlyOffers.ZipCode = requestZipCode.String()
 		}
-		// Drivly Offers
-		gjson.GetBytes(drivlyJSON, `@keys.#(%"*Price")#`).ForEach(func(key, value gjson.Result) bool {
-			offer := core.Offer{}
-			offer.Vendor = strings.TrimSuffix(value.String(), "Price") // eg. vroom, carvana, or carmax
-			gjson.GetBytes(drivlyJSON, `@keys.#(%"`+offer.Vendor+`*")#`).ForEach(func(key, value gjson.Result) bool {
-				prop := strings.TrimPrefix(value.String(), offer.Vendor)
-				if prop == "Url" {
-					prop = "URL"
-				}
-				if !reflect.ValueOf(&offer).Elem().FieldByName(prop).CanSet() {
-					return true
-				}
-				val := gjson.GetBytes(drivlyJSON, value.String())
-				switch val.Type {
-				case gjson.Null: // ignore null values
-					return true
-				case gjson.Number: // for "Price"
-					reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(int(val.Int())))
-				case gjson.JSON: // for "Error"
-					if prop == "Error" {
-						val = gjson.GetBytes(drivlyJSON, value.String()+".error.title")
-						if val.Exists() {
-							offer.Error = val.String()
-							// reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(val.String()))
-						}
-					}
-				default: // for everything else
-					reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(val.String()))
-				}
-				return true
-			})
-			drivlyOffers.Offers = append(drivlyOffers.Offers, offer)
-			return true
-		})
+
 		dOffer.OfferSets = append(dOffer.OfferSets, drivlyOffers)
 	}
 

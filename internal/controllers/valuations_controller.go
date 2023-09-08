@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
@@ -136,7 +138,21 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 
 	select {
 	case offer := <-ch:
-		return c.JSON(offer)
+
+		dOffer := core.DeviceOffer{
+			OfferSets: []core.OfferSet{},
+		}
+
+		offerJson, err := json.Marshal(offer["offer"].(map[string]interface{}))
+
+		if err != nil {
+			return err
+		}
+
+		offerSet := core.DecodeOfferFromJson(offerJson)
+
+		dOffer.OfferSets = append(dOffer.OfferSets, offerSet)
+		return c.JSON(dOffer)
 	case <-time.After(50 * time.Second):
 		return fiber.NewError(fiber.StatusRequestTimeout, "request timed out")
 	}
