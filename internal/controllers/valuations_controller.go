@@ -2,11 +2,9 @@ package controllers
 
 import (
 	"encoding/json"
-	"sync"
-	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
-	core "github.com/DIMO-Network/valuations-api/internal/core/models"
+	"github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
@@ -15,18 +13,15 @@ import (
 type ValuationsController struct {
 	log               *zerolog.Logger
 	userDeviceService services.UserDeviceAPIService
-	drivlyService     services.DrivlyAPIService
 	natsService       *services.NATSService
 }
 
 func NewValuationsController(log *zerolog.Logger,
 	userDeviceSvc services.UserDeviceAPIService,
-	drivlyService services.DrivlyAPIService,
 	natsService *services.NATSService) *ValuationsController {
 	return &ValuationsController{
 		log:               log,
 		userDeviceService: userDeviceSvc,
-		drivlyService:     drivlyService,
 		natsService:       natsService,
 	}
 }
@@ -111,62 +106,23 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
 
-	wg := &sync.WaitGroup{}
-	m := &sync.RWMutex{}
-	ch := make(chan map[string]interface{})
+	request := models.OfferRequest{VIN: *ud.Vin}
 
-	wg.Add(1)
-	go func(ch chan map[string]interface{}, vin string, wg *sync.WaitGroup, m *sync.RWMutex) {
-		params := services.ValuationRequestData{}
-		offer, err := vc.drivlyService.GetOffersByVIN(*ud.Vin, &params)
+	requestBytes, err := json.Marshal(request)
 
-		if err != nil {
-			m.Lock()
-			ch <- map[string]interface{}{
-				"error": err,
-			}
-			m.Unlock()
-		}
-
-		if offer != nil {
-			m.Lock()
-			ch <- map[string]interface{}{
-				"offer": offer,
-			}
-			m.Unlock()
-		}
-
-		wg.Done()
-	}(ch, *ud.Vin, wg, m)
-
-	wg.Wait()
-
-	select {
-	case offer := <-ch:
-
-		dOffer := core.DeviceOffer{
-			OfferSets: []core.OfferSet{},
-		}
-
-		offerJSON, err := json.Marshal(offer["offer"].(map[string]interface{}))
-
-		if err != nil {
-			return err
-		}
-
-		ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, offerJSON)
-
-		if err != nil {
-			vc.log.Err(err).Msg("failed to publish offer")
-		} else {
-			vc.log.Info().Msgf("published offer with id: %v", ack.Sequence)
-		}
-
-		offerSet := core.DecodeOfferFromJSON(offerJSON)
-
-		dOffer.OfferSets = append(dOffer.OfferSets, offerSet)
-		return c.JSON(dOffer)
-	case <-time.After(50 * time.Second):
-		return fiber.NewError(fiber.StatusRequestTimeout, "request timed out")
+	if err != nil {
+		return err
 	}
+
+	ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, requestBytes)
+
+	if err != nil {
+		vc.log.Err(err).Msg("failed to publish offer")
+	} else {
+		vc.log.Info().Msgf("published offer with id: %v", ack.Sequence)
+	}
+
+	return c.JSON(map[string]interface{}{
+		"message": "offer request sent",
+	})
 }

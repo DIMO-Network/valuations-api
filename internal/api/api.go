@@ -54,11 +54,9 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 		}
 	}()
 
-	drivlySrv := services.NewDrivlyAPIService(settings, pdb.DBS)
-
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, drivlySrv, *natsSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -120,7 +118,6 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 func startWebAPI(logger zerolog.Logger,
 	settings *config.Settings,
 	userDeviceSvc services.UserDeviceAPIService,
-	drivlyService services.DrivlyAPIService,
 	natsSrvc services.NATSService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -142,7 +139,7 @@ func startWebAPI(logger zerolog.Logger,
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlyService, &natsSrvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, &natsSrvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{

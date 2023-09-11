@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/tidwall/gjson"
 
@@ -13,7 +15,7 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
-	"github.com/pkg/errors"
+
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/volatiletech/null/v8"
@@ -25,6 +27,7 @@ import (
 
 type DrivlyValuationService interface {
 	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, vin string) (DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -52,7 +55,7 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
-		return ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
+		return ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
@@ -165,6 +168,36 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 
 	//defer appmetrics.DrivlyIngestTotalOps.Inc()
 
+	return PulledValuationDrivlyStatus, nil
+}
+
+func (d *drivlyValuationService) PullOffer(ctx context.Context, vin string) (DataPullStatusEnum, error) {
+	existingPricingData, _ := models.Valuations(
+		models.ValuationWhere.Vin.EQ(vin),
+		models.ValuationWhere.DrivlyPricingMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(context.Background(), d.dbs().Writer)
+
+	if existingPricingData == nil {
+		return ErrorDataPullStatus, errors.New("no pricing data found for this user device")
+	}
+
+	params := ValuationRequestData{}
+
+	offer, err := d.drivlySvc.GetOffersByVIN(vin, &params)
+
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	// update existing pricing data
+	_ = existingPricingData.OfferMetadata.Marshal(offer)
+
+	_, err = existingPricingData.Update(ctx, d.dbs().Writer, boil.Infer())
+
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
 	return PulledValuationDrivlyStatus, nil
 }
 
