@@ -37,6 +37,7 @@ func Test_runValuationCommandHandler_processMessage(t *testing.T) {
 		userDeviceService:        userDeviceSvc,
 		NATSSvc:                  nil,
 		vincarioValuationService: vincarioSvc,
+		drivlyValuationService:   drivlySvc,
 	}
 	type args struct {
 		msgBody string
