@@ -35,6 +35,21 @@ func (m *MockDrivlyValuationService) EXPECT() *MockDrivlyValuationServiceMockRec
 	return m.recorder
 }
 
+// PullOffer mocks base method.
+func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, vin string) (services.DataPullStatusEnum, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PullOffer", ctx, vin)
+	ret0, _ := ret[0].(services.DataPullStatusEnum)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PullOffer indicates an expected call of PullOffer.
+func (mr *MockDrivlyValuationServiceMockRecorder) PullOffer(ctx, vin interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullOffer", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullOffer), ctx, vin)
+}
+
 // PullValuation mocks base method.
 func (m *MockDrivlyValuationService) PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (services.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()

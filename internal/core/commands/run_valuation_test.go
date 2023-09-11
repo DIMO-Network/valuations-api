@@ -52,6 +52,7 @@ func Test_runValuationCommandHandler_processMessage(t *testing.T) {
 				setup: func() {
 					userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), userDeviceID).Times(1).Return(&pb.UserDevice{Id: userDeviceID, UserId: "123", CountryCode: "USA", DeviceDefinitionId: ddID}, nil)
 					drivlySvc.EXPECT().PullValuation(gomock.Any(), userDeviceID, ddID, vin)
+					drivlySvc.EXPECT().PullOffer(gomock.Any(), vin)
 				}},
 			wantErr: false,
 		},
