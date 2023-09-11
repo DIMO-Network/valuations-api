@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/tidwall/gjson"
@@ -27,7 +26,7 @@ import (
 
 type DrivlyValuationService interface {
 	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error)
-	PullOffer(ctx context.Context, vin string) (DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -171,29 +170,67 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	return PulledValuationDrivlyStatus, nil
 }
 
-func (d *drivlyValuationService) PullOffer(ctx context.Context, vin string) (DataPullStatusEnum, error) {
-	existingPricingData, _ := models.Valuations(
-		models.ValuationWhere.Vin.EQ(vin),
-		models.ValuationWhere.DrivlyPricingMetadata.IsNotNull(),
-		qm.OrderBy("updated_at desc"), qm.Limit(1)).
-		One(context.Background(), d.dbs().Writer)
-
-	if existingPricingData == nil {
-		return ErrorDataPullStatus, errors.New("no pricing data found for this user device")
+func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error) {
+	// make sure userdevice exists
+	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	if err != nil {
+		return ErrorDataPullStatus, err
 	}
 
-	params := ValuationRequestData{}
+	if userDevice.Vin == nil || !userDevice.VinConfirmed {
+		return ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
+	}
 
-	offer, err := d.drivlySvc.GetOffersByVIN(vin, &params)
+	existingOfferData, _ := models.Valuations(
+		models.ValuationWhere.Vin.EQ(*userDevice.Vin),
+		models.ValuationWhere.OfferMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(ctx, d.dbs().Writer)
+
+	if existingOfferData != nil {
+		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 30)) {
+			return ErrorDataPullStatus, fmt.Errorf("instant offer already request in last 30 days")
+		}
+	}
+
+	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, userDevice.DeviceDefinitionId)
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	// get mileage for the drivly request
+	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
+	if err != nil {
+		// just warn if can't get data
+		d.log.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
+	}
+	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	params := ValuationRequestData{
+		Mileage: deviceMileage,
+		ZipCode: &userDevice.PostalCode,
+	}
+
+	offer, err := d.drivlySvc.GetOffersByVIN(*userDevice.Vin, &params)
 
 	if err != nil {
 		return ErrorDataPullStatus, err
 	}
 
-	// update existing pricing data
-	_ = existingPricingData.OfferMetadata.Marshal(offer)
+	// insert new offer record
+	newOffer := &models.Valuation{
+		ID:                 ksuid.New().String(),
+		DeviceDefinitionID: null.StringFrom(userDevice.DeviceDefinitionId),
+		Vin:                *userDevice.Vin,
+		UserDeviceID:       null.StringFrom(userDeviceID),
+		RequestMetadata:    null.JSON{},
+	}
+	_ = newOffer.OfferMetadata.Marshal(offer)
 
-	_, err = existingPricingData.Update(ctx, d.dbs().Writer, boil.Infer())
+	err = newOffer.Insert(ctx, d.dbs().Writer, boil.Infer())
 
 	if err != nil {
 		return ErrorDataPullStatus, err

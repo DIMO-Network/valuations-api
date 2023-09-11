@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	services "github.com/DIMO-Network/valuations-api/internal/core/services"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockVincarioValuationService is a mock of VincarioValuationService interface.

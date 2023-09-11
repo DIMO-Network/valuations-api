@@ -10,7 +10,7 @@ import (
 
 	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
 	models "github.com/DIMO-Network/valuations-api/internal/core/models"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockUserDeviceAPIService is a mock of UserDeviceAPIService interface.

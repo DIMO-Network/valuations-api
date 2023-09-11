@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -89,7 +89,7 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Description gets instant offer for a particular user device
 // @Tags        user-devices
 // @Produce     json
-// @Success     200 {object} controllers.DeviceOffer
+// @Success     200 {object}
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
@@ -117,12 +117,12 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, requestBytes)
 
 	if err != nil {
-		vc.log.Err(err).Msg("failed to publish offer")
+		vc.log.Err(err).Msg("failed to publish offer request")
 	} else {
-		vc.log.Info().Msgf("published offer with id: %v", ack.Sequence)
+		vc.log.Info().Msgf("published offer request with id: %v", ack.Sequence)
 	}
 
-	return c.JSON(map[string]interface{}{
-		"message": "offer request sent",
+	return c.JSON(fiber.Map{
+		"message": "instant offer request sent",
 	})
 }
