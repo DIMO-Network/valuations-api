@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,13 +37,15 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
 	s.userDeviceSvc = mock_services.NewMockUserDeviceAPIService(mockCtrl)
+
 	var err error
 
 	if err != nil {
 		s.T().Fatal(err)
 	}
 
-	controller := NewValuationsController(logger, s.userDeviceSvc)
+	//TODO: check for drivly service api mock
+	controller := NewValuationsController(logger, s.userDeviceSvc, nil)
 	app := dbtest.SetupAppFiber(*logger)
 	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
 	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)

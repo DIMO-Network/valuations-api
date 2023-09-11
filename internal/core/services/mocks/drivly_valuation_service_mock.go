@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	services "github.com/DIMO-Network/valuations-api/internal/core/services"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockDrivlyValuationService is a mock of DrivlyValuationService interface.
@@ -33,6 +33,21 @@ func NewMockDrivlyValuationService(ctrl *gomock.Controller) *MockDrivlyValuation
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDrivlyValuationService) EXPECT() *MockDrivlyValuationServiceMockRecorder {
 	return m.recorder
+}
+
+// PullOffer mocks base method.
+func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (services.DataPullStatusEnum, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PullOffer", ctx, userDeviceID)
+	ret0, _ := ret[0].(services.DataPullStatusEnum)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PullOffer indicates an expected call of PullOffer.
+func (mr *MockDrivlyValuationServiceMockRecorder) PullOffer(ctx, userDeviceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullOffer", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullOffer), ctx, userDeviceID)
 }
 
 // PullValuation mocks base method.

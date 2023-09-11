@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
-	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/segmentio/ksuid"
 )

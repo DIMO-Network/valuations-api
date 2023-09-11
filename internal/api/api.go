@@ -47,9 +47,16 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 		}
 	}()
 
+	go func() {
+		err := handler.ExecuteOfferSync(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("unable to start nats consumer")
+		}
+	}()
+
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -108,7 +115,10 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
 // @name                        Authorization
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService) *fiber.App {
+func startWebAPI(logger zerolog.Logger,
+	settings *config.Settings,
+	userDeviceSvc services.UserDeviceAPIService,
+	natsSrvc services.NATSService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -129,7 +139,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, &natsSrvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
@@ -140,9 +150,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	})
 
 	v1Auth := app.Group("/v1", jwtAuth)
-	// todo bring in udOwner stuff, but see if can put in shared - major refactor btw
+
+	// TODO: bring in udOwner stuff, but see if can put in shared - major refactor btw
 	v1Auth.Get("/user/devices/:userDeviceID/valuations", valuationsController.GetValuations)
 	v1Auth.Get("/user/devices/:userDeviceID/offers", valuationsController.GetOffers)
+
+	v1Auth.Get("/user/devices/:userDeviceID/instant-offer", valuationsController.GetInstantOffer)
 
 	logger.Info().Msg("HTTP web server started on port " + settings.Port)
 	// Start Server from a different go routine

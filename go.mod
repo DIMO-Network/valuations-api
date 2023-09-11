@@ -19,17 +19,18 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/nats-io/nats.go v1.25.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.10.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/stretchr/testify v1.8.4
+	github.com/swaggo/swag v1.16.1
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/tidwall/gjson v1.14.4
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.14.2
 	github.com/volatiletech/strmangle v0.0.4
+	go.uber.org/mock v0.2.0
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -57,20 +58,15 @@ require (
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/savsgio/dictpool v0.0.0-20221023140959-7bf2e61cea94 // indirect
-	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
-	github.com/swaggo/swag v1.16.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
 	golang.org/x/crypto v0.12.0 // indirect

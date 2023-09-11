@@ -19,6 +19,7 @@ import (
 
 type RunValuationCommandHandler interface {
 	Execute(ctx context.Context) error
+	ExecuteOfferSync(ctx context.Context) error
 }
 
 const NorthAmercanCountries = "USA,CAN,MEX,PRI"
@@ -56,7 +57,7 @@ type RunTestSignalCommandResponse struct {
 }
 
 func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
-	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.JetStreamSubject, h.NATSSvc.DurableConsumer, nats.AckWait(h.NATSSvc.AckTimeout))
+	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.ValuationSubject, h.NATSSvc.ValuationDurableConsumer, nats.AckWait(h.NATSSvc.AckTimeout))
 
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/tidwall/gjson"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
-	"github.com/pkg/errors"
+
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/volatiletech/null/v8"
@@ -25,6 +26,7 @@ import (
 
 type DrivlyValuationService interface {
 	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -52,7 +54,7 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
-		return ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
+		return ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
@@ -135,11 +137,6 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 	_ = valuation.RequestMetadata.Marshal(reqData)
 
-	// only pull offers and pricing on every pull.
-	offer, err := d.drivlySvc.GetOffersByVIN(vin, &reqData) // future: this will be optional with a new endpoint
-	if err == nil {
-		_ = valuation.OfferMetadata.Marshal(offer)
-	}
 	pricing, err := d.drivlySvc.GetVINPricing(vin, &reqData)
 	if err == nil {
 		_ = valuation.DrivlyPricingMetadata.Marshal(pricing)
@@ -170,6 +167,74 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 
 	//defer appmetrics.DrivlyIngestTotalOps.Inc()
 
+	return PulledValuationDrivlyStatus, nil
+}
+
+func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error) {
+	// make sure userdevice exists
+	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	if userDevice.Vin == nil || !userDevice.VinConfirmed {
+		return ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
+	}
+
+	existingOfferData, _ := models.Valuations(
+		models.ValuationWhere.Vin.EQ(*userDevice.Vin),
+		models.ValuationWhere.OfferMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(ctx, d.dbs().Writer)
+
+	if existingOfferData != nil {
+		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 30)) {
+			return ErrorDataPullStatus, fmt.Errorf("instant offer already request in last 30 days")
+		}
+	}
+
+	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, userDevice.DeviceDefinitionId)
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	// get mileage for the drivly request
+	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
+	if err != nil {
+		// just warn if can't get data
+		d.log.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
+	}
+	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	params := ValuationRequestData{
+		Mileage: deviceMileage,
+		ZipCode: &userDevice.PostalCode,
+	}
+
+	offer, err := d.drivlySvc.GetOffersByVIN(*userDevice.Vin, &params)
+
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
+
+	// insert new offer record
+	newOffer := &models.Valuation{
+		ID:                 ksuid.New().String(),
+		DeviceDefinitionID: null.StringFrom(userDevice.DeviceDefinitionId),
+		Vin:                *userDevice.Vin,
+		UserDeviceID:       null.StringFrom(userDeviceID),
+		RequestMetadata:    null.JSON{},
+	}
+	_ = newOffer.OfferMetadata.Marshal(offer)
+
+	err = newOffer.Insert(ctx, d.dbs().Writer, boil.Infer())
+
+	if err != nil {
+		return ErrorDataPullStatus, err
+	}
 	return PulledValuationDrivlyStatus, nil
 }
 

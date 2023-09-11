@@ -25,11 +25,13 @@ type Settings struct {
 	DrivlyOfferAPIURL         string      `yaml:"DRIVLY_OFFER_API_URL"`
 	GoogleMapsAPIKey          string      `yaml:"GOOGLE_MAPS_API_KEY"`
 
-	NATSURL              string `yaml:"NATS_URL"`
-	NATSStreamName       string `yaml:"NATS_STREAM_NAME"`
-	NATSValuationSubject string `yaml:"NATS_VALUATION_SUBJECT"`
-	NATSAckTimeout       string `yaml:"NATS_ACK_TIMEOUT"`
-	NATSDurableConsumer  string `yaml:"NATS_DURABLE_CONSUMER"`
+	NATSURL                      string `yaml:"NATS_URL"`
+	NATSStreamName               string `yaml:"NATS_STREAM_NAME"`
+	NATSValuationSubject         string `yaml:"NATS_VALUATION_SUBJECT"`
+	NATSAckTimeout               string `yaml:"NATS_ACK_TIMEOUT"`
+	NATSValuationDurableConsumer string `yaml:"NATS_VALUATION_DURABLE_CONSUMER"`
+	NATSOfferSubject             string `yaml:"NATS_OFFER_SUBJECT"`
+	NATSOfferDurableConsumer     string `yaml:"NATS_OFFER_DURABLE_CONSUMER"`
 }
 
 func (s *Settings) IsProduction() bool {

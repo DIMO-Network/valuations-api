@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockRunValuationCommandHandler is a mock of RunValuationCommandHandler interface.
@@ -46,4 +46,18 @@ func (m *MockRunValuationCommandHandler) Execute(ctx context.Context) error {
 func (mr *MockRunValuationCommandHandlerMockRecorder) Execute(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockRunValuationCommandHandler)(nil).Execute), ctx)
+}
+
+// ExecuteOfferSync mocks base method.
+func (m *MockRunValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecuteOfferSync", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecuteOfferSync indicates an expected call of ExecuteOfferSync.
+func (mr *MockRunValuationCommandHandlerMockRecorder) ExecuteOfferSync(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteOfferSync", reflect.TypeOf((*MockRunValuationCommandHandler)(nil).ExecuteOfferSync), ctx)
 }

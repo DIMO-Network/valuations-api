@@ -1,5 +1,12 @@
 package models
 
+import (
+	"reflect"
+	"strings"
+
+	"github.com/tidwall/gjson"
+)
+
 type DeviceOffer struct {
 	// Contains a list of offer sets, one for each source
 	OfferSets []OfferSet `json:"offerSets"`
@@ -29,4 +36,45 @@ type Offer struct {
 	Grade string `json:"grade,omitempty"`
 	// The reason the offer was declined from the vendor
 	DeclineReason string `json:"declineReason,omitempty"`
+}
+
+func DecodeOfferFromJSON(drivlyJSON []byte) OfferSet {
+	drivlyOffers := OfferSet{}
+	drivlyOffers.Source = "drivly"
+
+	// Drivly Offers
+	gjson.GetBytes(drivlyJSON, `@keys.#(%"*Price")#`).ForEach(func(key, value gjson.Result) bool {
+		offer := Offer{}
+		offer.Vendor = strings.TrimSuffix(value.String(), "Price") // eg. vroom, carvana, or carmax
+		gjson.GetBytes(drivlyJSON, `@keys.#(%"`+offer.Vendor+`*")#`).ForEach(func(key, value gjson.Result) bool {
+			prop := strings.TrimPrefix(value.String(), offer.Vendor)
+			if prop == "Url" {
+				prop = "URL"
+			}
+			if !reflect.ValueOf(&offer).Elem().FieldByName(prop).CanSet() {
+				return true
+			}
+			val := gjson.GetBytes(drivlyJSON, value.String())
+			switch val.Type {
+			case gjson.Null: // ignore null values
+				return true
+			case gjson.Number: // for "Price"
+				reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(int(val.Int())))
+			case gjson.JSON: // for "Error"
+				if prop == "Error" {
+					val = gjson.GetBytes(drivlyJSON, value.String()+".error.title")
+					if val.Exists() {
+						offer.Error = val.String()
+					}
+				}
+			default: // for everything else
+				reflect.ValueOf(&offer).Elem().FieldByName(prop).Set(reflect.ValueOf(val.String()))
+			}
+			return true
+		})
+		drivlyOffers.Offers = append(drivlyOffers.Offers, offer)
+		return true
+	})
+
+	return drivlyOffers
 }
