@@ -51,7 +51,7 @@ func NewDrivlyAPIService(settings *config.Settings, dbs func() *db.ReaderWriter)
 	}
 	h := map[string]string{"x-api-key": settings.DrivlyAPIKey}
 	hcwv, _ := shared.NewHTTPClientWrapper(settings.DrivlyVINAPIURL, "", 10*time.Second, h, true)
-	hcwo, _ := shared.NewHTTPClientWrapper(settings.DrivlyOfferAPIURL, "", 10*time.Second, h, true)
+	hcwo, _ := shared.NewHTTPClientWrapper(settings.DrivlyOfferAPIURL, "", 120*time.Second, h, true)
 
 	return &drivlyAPIService{
 		Settings:        settings,

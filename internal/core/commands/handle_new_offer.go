@@ -30,17 +30,19 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 			err := json.Unmarshal(msg.Data, &payload)
 
 			if err != nil {
-				h.nak(msg)
+				//h.nak(msg)
+				msg.Ack()
 				h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to invalid payload")
-				return err
+				//return err
 			}
 
 			status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID)
 
 			if err != nil {
-				h.nak(msg)
+				//h.nak(msg)
+				msg.Ack()
 				h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to internal error")
-				return err
+				//return err
 			}
 
 			h.logger.Info().Str("payload", string(msg.Data)).Msgf("processing offer request with status %s", status)
