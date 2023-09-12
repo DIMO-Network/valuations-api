@@ -99,8 +99,9 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	userID := helpers.GetUserID(c)
 
-	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+	localLog := vc.log.With().Str("user_device_id", udi).Logger()
 
+	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
 	if err != nil {
 		return err
 	}
@@ -110,19 +111,16 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	}
 
 	request := models.OfferRequest{VIN: *ud.Vin}
-
 	requestBytes, err := json.Marshal(request)
-
 	if err != nil {
 		return err
 	}
 
 	ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, requestBytes)
-
 	if err != nil {
-		vc.log.Err(err).Msg("failed to publish offer request")
+		localLog.Err(err).Msg("failed to publish offer request")
 	} else {
-		vc.log.Info().Msgf("published offer request with id: %v", ack.Sequence)
+		localLog.Info().Msgf("published offer request with id: %v", ack.Sequence)
 	}
 
 	return c.JSON(fiber.Map{

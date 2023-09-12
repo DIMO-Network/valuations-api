@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -23,7 +23,7 @@ type NATSService struct {
 func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSService, error) {
 	n, err := nats.Connect(settings.NATSURL)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to connect to "+settings.NATSURL)
 	}
 
 	js, err := n.JetStream()
