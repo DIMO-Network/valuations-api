@@ -1,21 +1,21 @@
 definitions:
-  internal_controllers.DeviceOffer:
+  github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer:
     properties:
       offerSets:
         description: Contains a list of offer sets, one for each source
         items:
-          $ref: '#/definitions/internal_controllers.OfferSet'
+          $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OfferSet'
         type: array
     type: object
-  internal_controllers.DeviceValuation:
+  github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation:
     properties:
       valuationSets:
         description: Contains a list of valuation sets, one for each vendor
         items:
-          $ref: '#/definitions/internal_controllers.ValuationSet'
+          $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.ValuationSet'
         type: array
     type: object
-  internal_controllers.Offer:
+  github_com_DIMO-Network_valuations-api_internal_core_models.Offer:
     properties:
       declineReason:
         description: The reason the offer was declined from the vendor
@@ -36,7 +36,7 @@ definitions:
         description: The vendor of the offer (eg. "carmax", "carvana", etc.)
         type: string
     type: object
-  internal_controllers.OfferSet:
+  github_com_DIMO-Network_valuations-api_internal_core_models.OfferSet:
     properties:
       mileage:
         description: The mileage used for the offers
@@ -44,7 +44,7 @@ definitions:
       offers:
         description: Contains a list of offers from the source
         items:
-          $ref: '#/definitions/internal_controllers.Offer'
+          $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.Offer'
         type: array
       source:
         description: The source of the offers (eg. "drivly")
@@ -57,7 +57,7 @@ definitions:
           regardless if the source uses it
         type: string
     type: object
-  internal_controllers.ValuationSet:
+  github_com_DIMO-Network_valuations-api_internal_core_models.ValuationSet:
     properties:
       currency:
         description: eg. USD or EUR
@@ -119,20 +119,35 @@ definitions:
 info:
   contact: {}
 paths:
+  /user/devices/{userDeviceID}/instant-offer:
+    get:
+      description: |-
+        makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
+        You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      tags:
+      - offers
   /user/devices/{userDeviceID}/offers:
     get:
-      description: gets offers for a particular user device
+      description: gets any existing offers for a particular user device. You must
+        call instant-offer endpoint first to pull.
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controllers.DeviceOffer'
+            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer'
       security:
       - BearerAuth: []
       tags:
-      - user-devices
+      - offers
   /user/devices/{userDeviceID}/valuations:
     get:
       description: gets valuations for a particular user device. Includes only price
@@ -149,9 +164,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controllers.DeviceValuation'
+            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation'
       security:
       - BearerAuth: []
       tags:
-      - user-devices
+      - valuations
 swagger: "2.0"

@@ -28,10 +28,10 @@ func NewValuationsController(log *zerolog.Logger,
 
 // GetValuations godoc
 // @Description gets valuations for a particular user device. Includes only price valuations, not offers. only gets the latest valuation.
-// @Tags        user-devices
+// @Tags        valuations
 // @Produce     json
 // @Param       userDeviceID path string true "user device id"
-// @Success     200 {object} controllers.DeviceValuation
+// @Success     200 {object} models.DeviceValuation
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
@@ -57,10 +57,10 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 }
 
 // GetOffers godoc
-// @Description gets offers for a particular user device
-// @Tags        user-devices
+// @Description gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull.
+// @Tags        offers
 // @Produce     json
-// @Success     200 {object} controllers.DeviceOffer
+// @Success     200 {object} models.DeviceOffer
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
@@ -86,10 +86,11 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 }
 
 // GetInstantOffer godoc
-// @Description gets instant offer for a particular user device
-// @Tags        user-devices
+// @Description makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
+// @Description You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
+// @Tags        offers
 // @Produce     json
-// @Success     200 {object}
+// @Success     200
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {

@@ -4,6 +4,27 @@
         "contact": {}
     },
     "paths": {
+        "/user/devices/{userDeviceID}/instant-offer": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "makes a request for an instant offer for a particular user device. Simply returns success if able to create job.\nYou will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "offers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/user/devices/{userDeviceID}/offers": {
             "get": {
                 "security": [
@@ -11,18 +32,18 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "gets offers for a particular user device",
+                "description": "gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "user-devices"
+                    "offers"
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controllers.DeviceOffer"
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer"
                         }
                     }
                 }
@@ -40,7 +61,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user-devices"
+                    "valuations"
                 ],
                 "parameters": [
                     {
@@ -55,7 +76,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controllers.DeviceValuation"
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation"
                         }
                     }
                 }
@@ -63,31 +84,31 @@
         }
     },
     "definitions": {
-        "internal_controllers.DeviceOffer": {
+        "github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer": {
             "type": "object",
             "properties": {
                 "offerSets": {
                     "description": "Contains a list of offer sets, one for each source",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_controllers.OfferSet"
+                        "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OfferSet"
                     }
                 }
             }
         },
-        "internal_controllers.DeviceValuation": {
+        "github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation": {
             "type": "object",
             "properties": {
                 "valuationSets": {
                     "description": "Contains a list of valuation sets, one for each vendor",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_controllers.ValuationSet"
+                        "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.ValuationSet"
                     }
                 }
             }
         },
-        "internal_controllers.Offer": {
+        "github_com_DIMO-Network_valuations-api_internal_core_models.Offer": {
             "type": "object",
             "properties": {
                 "declineReason": {
@@ -116,7 +137,7 @@
                 }
             }
         },
-        "internal_controllers.OfferSet": {
+        "github_com_DIMO-Network_valuations-api_internal_core_models.OfferSet": {
             "type": "object",
             "properties": {
                 "mileage": {
@@ -127,7 +148,7 @@
                     "description": "Contains a list of offers from the source",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_controllers.Offer"
+                        "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.Offer"
                     }
                 },
                 "source": {
@@ -144,7 +165,7 @@
                 }
             }
         },
-        "internal_controllers.ValuationSet": {
+        "github_com_DIMO-Network_valuations-api_internal_core_models.ValuationSet": {
             "type": "object",
             "properties": {
                 "currency": {
