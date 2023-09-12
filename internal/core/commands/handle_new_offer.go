@@ -27,7 +27,7 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 				return err
 			}
 
-			status, err := h.drivlyValuationService.PullOffer(ctx, payload.VIN)
+			status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID)
 
 			if err != nil {
 				h.nak(msg)

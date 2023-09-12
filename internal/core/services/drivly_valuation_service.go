@@ -205,7 +205,9 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		d.log.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
 	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+
 	if err != nil {
+		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling mileage data")
 		return ErrorDataPullStatus, err
 	}
 
@@ -217,6 +219,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	offer, err := d.drivlySvc.GetOffersByVIN(*userDevice.Vin, &params)
 
 	if err != nil {
+		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling drivly offer data")
 		return ErrorDataPullStatus, err
 	}
 

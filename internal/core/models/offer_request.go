@@ -1,5 +1,5 @@
 package models
 
 type OfferRequest struct {
-	VIN string `json:"vin"`
+	UserDeviceID string `json:"user_device_id"`
 }

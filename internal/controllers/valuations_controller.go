@@ -103,6 +103,7 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
 	if err != nil {
+		vc.log.Err(err).Msg("failed to get user device")
 		return err
 	}
 
@@ -110,9 +111,10 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
 
-	request := models.OfferRequest{VIN: *ud.Vin}
+	request := models.OfferRequest{UserDeviceID: ud.Id}
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
+		localLog.Err(err).Msg("failed to marshal offer request")
 		return err
 	}
 
