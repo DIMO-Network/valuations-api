@@ -29,6 +29,7 @@ type UserDeviceAPIService interface {
 	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
 	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
 	GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error)
+	CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error)
 }
 
 type userDeviceAPIService struct {
@@ -241,6 +242,27 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 	}
 
 	return &dVal, nil
+}
+
+func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error) {
+
+	existingOfferData, err := models.Valuations(
+		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+		models.ValuationWhere.OfferMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(ctx, das.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, err
+	}
+
+	if existingOfferData != nil {
+		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 30)) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 // extractDrivlyValuation pulls out the price from the drivly json, based on the passed in key, eg. trade or retail. calculates average if no root property found

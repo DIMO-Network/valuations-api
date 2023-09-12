@@ -13,6 +13,7 @@ import (
 	pbdeviceapi "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 
 	"github.com/rs/zerolog"
@@ -25,8 +26,8 @@ import (
 //go:generate mockgen -source drivly_valuation_service.go -destination mocks/drivly_valuation_service_mock.go
 
 type DrivlyValuationService interface {
-	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error)
-	PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, userDeviceID string) (core.DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -51,22 +52,22 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 	}
 }
 
-func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
-		return ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
+		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", deviceDefinitionID).Str("user_device_id", userDeviceID).Logger()
 
 	// make sure userdevice exists
 	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	// determine if want to pull pricing data
@@ -78,7 +79,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	// just return if already pulled recently for this VIN, but still need to insert never pulled vin - should be uncommon scenario
 	if existingPricingData != nil && existingPricingData.UpdatedAt.Add(repullWindow).After(time.Now()) {
 		localLog.Info().Msgf("already pulled pricing data for vin %s, skipping", vin)
-		return SkippedDataPullStatus, nil
+		return core.SkippedDataPullStatus, nil
 	}
 
 	// by this point we know we might need to insert drivly valuation
@@ -97,7 +98,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	reqData := ValuationRequestData{
@@ -162,23 +163,23 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 
 	err = valuation.Insert(ctx, d.dbs().Writer, boil.Infer())
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	//defer appmetrics.DrivlyIngestTotalOps.Inc()
 
-	return PulledValuationDrivlyStatus, nil
+	return core.PulledValuationDrivlyStatus, nil
 }
 
-func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (core.DataPullStatusEnum, error) {
 	// make sure userdevice exists
 	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	if userDevice.Vin == nil || !userDevice.VinConfirmed {
-		return ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
+		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
 	}
 
 	existingOfferData, _ := models.Valuations(
@@ -189,13 +190,13 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 
 	if existingOfferData != nil {
 		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 30)) {
-			return ErrorDataPullStatus, fmt.Errorf("instant offer already request in last 30 days")
+			return core.SkippedDataPullStatus, fmt.Errorf("instant offer already request in last 30 days")
 		}
 	}
 
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, userDevice.DeviceDefinitionId)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	// get mileage for the drivly request
@@ -208,7 +209,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 
 	if err != nil {
 		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling mileage data")
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	params := ValuationRequestData{
@@ -220,7 +221,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 
 	if err != nil {
 		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling drivly offer data")
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 
 	// insert new offer record
@@ -236,9 +237,9 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	err = newOffer.Insert(ctx, d.dbs().Writer, boil.Infer())
 
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
-	return PulledValuationDrivlyStatus, nil
+	return core.PulledValuationDrivlyStatus, nil
 }
 
 func safePtrFloat(f *float64) float64 {

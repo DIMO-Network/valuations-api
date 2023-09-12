@@ -8,6 +8,7 @@ import (
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -20,7 +21,7 @@ import (
 //go:generate mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go
 
 type VincarioValuationService interface {
-	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
 }
 
 type vincarioValuationService struct {
@@ -39,20 +40,20 @@ func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logge
 	}
 }
 
-func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (DataPullStatusEnum, error) {
+func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
-		return ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
+		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
 	}
 
 	// make sure userdevice exists
 	ud, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
-		return ErrorDataPullStatus, err
+		return core.ErrorDataPullStatus, err
 	}
 	// do not pull for USA
 	if strings.EqualFold(ud.CountryCode, "USA") {
-		return SkippedDataPullStatus, nil
+		return core.SkippedDataPullStatus, nil
 	}
 
 	// check repull window
@@ -64,7 +65,7 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, userDevice
 
 	// just return if already pulled recently for this VIN, but still need to insert never pulled vin - should be uncommon scenario
 	if existingPricingData != nil && existingPricingData.UpdatedAt.Add(repullWindow).After(time.Now()) {
-		return SkippedDataPullStatus, nil
+		return core.SkippedDataPullStatus, nil
 	}
 
 	externalVinData := &models.Valuation{
@@ -77,28 +78,16 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, userDevice
 	valuation, err := d.vincarioSvc.GetMarketValuation(vin)
 
 	if err != nil {
-		return ErrorDataPullStatus, errors.Wrap(err, "error pulling market data from vincario")
+		return core.ErrorDataPullStatus, errors.Wrap(err, "error pulling market data from vincario")
 	}
 	err = externalVinData.VincarioMetadata.Marshal(valuation)
 	if err != nil {
-		return ErrorDataPullStatus, errors.Wrap(err, "error marshalling vincario responset")
+		return core.ErrorDataPullStatus, errors.Wrap(err, "error marshalling vincario responset")
 	}
 	err = externalVinData.Insert(ctx, d.dbs().Writer, boil.Infer())
 	if err != nil {
-		return ErrorDataPullStatus, errors.Wrap(err, "error inserting external_vin_data for vincario")
+		return core.ErrorDataPullStatus, errors.Wrap(err, "error inserting external_vin_data for vincario")
 	}
 
-	return PulledValuationVincarioStatus, nil
+	return core.PulledValuationVincarioStatus, nil
 }
-
-type DataPullStatusEnum string
-
-const (
-	// PulledInfoAndValuationStatus means we pulled vin, edmunds, build and valuations
-	PulledInfoAndValuationStatus DataPullStatusEnum = "PulledAll"
-	// PulledValuationDrivlyStatus means we only pulled offers and pricing
-	PulledValuationDrivlyStatus   DataPullStatusEnum = "PulledValuations"
-	PulledValuationVincarioStatus DataPullStatusEnum = "PulledValuationVincario"
-	SkippedDataPullStatus         DataPullStatusEnum = "Skipped"
-	ErrorDataPullStatus           DataPullStatusEnum = "Error"
-)

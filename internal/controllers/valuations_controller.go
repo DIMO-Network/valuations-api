@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
-	"github.com/DIMO-Network/valuations-api/internal/core/models"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
@@ -102,6 +102,7 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	localLog := vc.log.With().Str("user_device_id", udi).Logger()
 
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+
 	if err != nil {
 		vc.log.Err(err).Msg("failed to get user device")
 		return err
@@ -111,7 +112,18 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
 
-	request := models.OfferRequest{UserDeviceID: ud.Id}
+	canRequestInsantOffer, err := vc.userDeviceService.CanRequestInstantOffer(c.Context(), ud.Id)
+
+	if err != nil {
+		vc.log.Err(err).Msg("failed to check if user can request instant offer")
+		return err
+	}
+
+	if !canRequestInsantOffer {
+		return fiber.NewError(fiber.StatusBadRequest, "already requested in last 30 days")
+	}
+
+	request := core.OfferRequest{UserDeviceID: ud.Id}
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
 		localLog.Err(err).Msg("failed to marshal offer request")

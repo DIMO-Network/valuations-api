@@ -6,6 +6,7 @@ import (
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/rs/zerolog"
 )
@@ -46,7 +47,7 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 		return err
 	}
 
-	statsAggr := map[services.DataPullStatusEnum]int{}
+	statsAggr := map[core.DataPullStatusEnum]int{}
 	for _, ud := range all {
 		if ud.CountryCode == "USA" || ud.CountryCode == "CAN" || ud.CountryCode == "MEX" {
 			status, err := h.drivlyValuationService.PullValuation(ctx, ud.Id, ud.DeviceDefinitionId, *ud.Vin)
@@ -69,10 +70,10 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 	fmt.Println("-------------------RUN SUMMARY--------------------------")
 	// colorize each result
 	fmt.Printf("Total VINs processed: %d \n", len(all))
-	fmt.Printf("New Drivly Pulls (vin + valuations): %d \n", statsAggr[services.PulledInfoAndValuationStatus])
-	fmt.Printf("Pulled New Pricing & Offers: %d \n", statsAggr[services.PulledValuationDrivlyStatus])
-	fmt.Printf("Skipped VIN due to biz logic: %d \n", statsAggr[services.SkippedDataPullStatus])
-	fmt.Printf("Pulled New Vincario Market Valuation: %d \n", statsAggr[services.PulledValuationVincarioStatus])
+	fmt.Printf("New Drivly Pulls (vin + valuations): %d \n", statsAggr[core.PulledInfoAndValuationStatus])
+	fmt.Printf("Pulled New Pricing & Offers: %d \n", statsAggr[core.PulledValuationDrivlyStatus])
+	fmt.Printf("Skipped VIN due to biz logic: %d \n", statsAggr[core.SkippedDataPullStatus])
+	fmt.Printf("Pulled New Vincario Market Valuation: %d \n", statsAggr[core.PulledValuationVincarioStatus])
 	fmt.Printf("Skipped VIN due to error: %d \n", statsAggr[""])
 	fmt.Println("--------------------------------------------------------")
 	return nil

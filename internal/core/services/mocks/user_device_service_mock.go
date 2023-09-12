@@ -36,6 +36,21 @@ func (m *MockUserDeviceAPIService) EXPECT() *MockUserDeviceAPIServiceMockRecorde
 	return m.recorder
 }
 
+// CanRequestInstantOffer mocks base method.
+func (m *MockUserDeviceAPIService) CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanRequestInstantOffer", ctx, userDeviceID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CanRequestInstantOffer indicates an expected call of CanRequestInstantOffer.
+func (mr *MockUserDeviceAPIServiceMockRecorder) CanRequestInstantOffer(ctx, userDeviceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanRequestInstantOffer", reflect.TypeOf((*MockUserDeviceAPIService)(nil).CanRequestInstantOffer), ctx, userDeviceID)
+}
+
 // GetAllUserDevice mocks base method.
 func (m *MockUserDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*grpc.UserDevice, error) {
 	m.ctrl.T.Helper()

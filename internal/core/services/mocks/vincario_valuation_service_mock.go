@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	services "github.com/DIMO-Network/valuations-api/internal/core/services"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -36,10 +36,10 @@ func (m *MockVincarioValuationService) EXPECT() *MockVincarioValuationServiceMoc
 }
 
 // PullValuation mocks base method.
-func (m *MockVincarioValuationService) PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (services.DataPullStatusEnum, error) {
+func (m *MockVincarioValuationService) PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PullValuation", ctx, userDeiceID, deviceDefinitionID, vin)
-	ret0, _ := ret[0].(services.DataPullStatusEnum)
+	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

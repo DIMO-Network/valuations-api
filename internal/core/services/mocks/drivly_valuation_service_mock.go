@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	services "github.com/DIMO-Network/valuations-api/internal/core/services"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -36,10 +36,10 @@ func (m *MockDrivlyValuationService) EXPECT() *MockDrivlyValuationServiceMockRec
 }
 
 // PullOffer mocks base method.
-func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (services.DataPullStatusEnum, error) {
+func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PullOffer", ctx, userDeviceID)
-	ret0, _ := ret[0].(services.DataPullStatusEnum)
+	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +51,10 @@ func (mr *MockDrivlyValuationServiceMockRecorder) PullOffer(ctx, userDeviceID in
 }
 
 // PullValuation mocks base method.
-func (m *MockDrivlyValuationService) PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (services.DataPullStatusEnum, error) {
+func (m *MockDrivlyValuationService) PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PullValuation", ctx, userDeiceID, deviceDefinitionID, vin)
-	ret0, _ := ret[0].(services.DataPullStatusEnum)
+	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

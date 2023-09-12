@@ -60,7 +60,7 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 
 				status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID)
 
-				if err != nil {
+				if err != nil && status != core.SkippedDataPullStatus {
 					h.nak(msg)
 					h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to internal error")
 					continue
