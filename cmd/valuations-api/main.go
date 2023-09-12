@@ -16,6 +16,13 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// @title                       DIMO Vehicle Valuations API
+// @description 				API to get latest valuation for a given connected vehicle belonging to user
+// @version                     1.0
+// @BasePath                    /v1
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
 func main() {
 
 	gitSha1 := os.Getenv("GIT_SHA1")

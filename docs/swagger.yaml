@@ -1,3 +1,4 @@
+basePath: /v1
 definitions:
   github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer:
     properties:
@@ -118,6 +119,10 @@ definitions:
     type: object
 info:
   contact: {}
+  description: API to get latest valuation for a given connected vehicle belonging
+    to user
+  title: DIMO Vehicle Valuations API
+  version: "1.0"
 paths:
   /user/devices/{userDeviceID}/instant-offer:
     get:
@@ -181,4 +186,9 @@ paths:
       - BearerAuth: []
       tags:
       - valuations
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "API to get latest valuation for a given connected vehicle belonging to user",
+        "title": "DIMO Vehicle Valuations API",
+        "contact": {},
+        "version": "1.0"
     },
+    "basePath": "/v1",
     "paths": {
         "/user/devices/{userDeviceID}/instant-offer": {
             "get": {
@@ -253,6 +257,13 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

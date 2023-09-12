@@ -108,13 +108,6 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 	}
 }
 
-// @title                       DIMO Vehicle Valuations API
-// @description 				API to get latest valuation for a given connected vehicle belonging to user
-// @version                     1.0
-// @BasePath                    /v1
-// @securityDefinitions.apikey  BearerAuth
-// @in                          header
-// @name                        Authorization
 func startWebAPI(logger zerolog.Logger,
 	settings *config.Settings,
 	userDeviceSvc services.UserDeviceAPIService,
