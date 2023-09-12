@@ -43,7 +43,14 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	go func() {
 		err := handler.Execute(ctx)
 		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer")
+			logger.Error().Err(err).Msg("unable to start nats consumer for valuation")
+		}
+	}()
+
+	go func() {
+		err := handler.ExecuteOfferSync(ctx)
+		if err != nil {
+			logger.Error().Err(err).Msg("unable to start nats consumer for offer sync")
 		}
 	}()
 
