@@ -18,6 +18,15 @@
                 "tags": [
                     "offers"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userDeviceID for vehicle to get offers",
+                        "name": "userDeviceID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -38,6 +47,15 @@
                 ],
                 "tags": [
                     "offers"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userDeviceID for vehicle to get offers",
+                        "name": "userDeviceID",
+                        "in": "path",
+                        "required": true
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -66,7 +84,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "user device id",
+                        "description": "userDeviceID for vehicle to get offers",
                         "name": "userDeviceID",
                         "in": "path",
                         "required": true

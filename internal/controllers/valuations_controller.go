@@ -30,7 +30,7 @@ func NewValuationsController(log *zerolog.Logger,
 // @Description gets valuations for a particular user device. Includes only price valuations, not offers. only gets the latest valuation.
 // @Tags        valuations
 // @Produce     json
-// @Param       userDeviceID path string true "user device id"
+// @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} models.DeviceValuation
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/valuations [get]
@@ -60,6 +60,7 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Description gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull.
 // @Tags        offers
 // @Produce     json
+// @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} models.DeviceOffer
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/offers [get]
@@ -90,6 +91,7 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Description You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
 // @Tags        offers
 // @Produce     json
+// @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
