@@ -54,13 +54,6 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 		}
 	}()
 
-	go func() {
-		err := handler.ExecuteOfferSync(ctx)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer")
-		}
-	}()
-
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
 	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc)
