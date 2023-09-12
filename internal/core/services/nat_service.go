@@ -1,8 +1,9 @@
 package services
 
 import (
-	"github.com/pkg/errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/nats-io/nats.go"
@@ -50,9 +51,9 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	to, err := time.ParseDuration(settings.NATSAckTimeout)
