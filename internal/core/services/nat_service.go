@@ -39,19 +39,17 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 	})
 
 	if err != nil {
+		if !errors.Is(err, nats.ErrStreamNameAlreadyInUse) {
+			return nil, err
+		}
 
-		if errors.Is(err, nats.ErrStreamNameAlreadyInUse) {
+		_, err = js.UpdateStream(&nats.StreamConfig{
+			Name:      settings.NATSStreamName,
+			Retention: nats.WorkQueuePolicy,
+			Subjects:  []string{settings.NATSValuationSubject, settings.NATSOfferSubject},
+		})
 
-			_, err = js.UpdateStream(&nats.StreamConfig{
-				Name:      settings.NATSStreamName,
-				Retention: nats.WorkQueuePolicy,
-				Subjects:  []string{settings.NATSValuationSubject, settings.NATSOfferSubject},
-			})
-
-			if err != nil {
-				return nil, err
-			}
-		} else {
+		if err != nil {
 			return nil, err
 		}
 	}

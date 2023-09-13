@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 
 	"encoding/json"
 
@@ -25,7 +26,7 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 		msgs, err := sub.Fetch(1, nats.MaxWait(h.NATSSvc.AckTimeout))
 
 		if err != nil {
-			if err == nats.ErrTimeout {
+			if errors.Is(err, nats.ErrTimeout) {
 				h.logger.Info().Msg("no messages found at offer sync")
 				continue
 			}

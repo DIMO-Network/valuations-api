@@ -67,7 +67,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 	for {
 		msgs, err := sub.Fetch(1, nats.MaxWait(h.NATSSvc.AckTimeout))
 		if err != nil {
-			if err == nats.ErrTimeout {
+			if errors.Is(err, nats.ErrTimeout) {
 				continue
 			}
 
