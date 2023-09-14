@@ -274,20 +274,24 @@ func (das *userDeviceAPIService) LastRequestDidGiveError(ctx context.Context, us
 		qm.OrderBy("updated_at desc"), qm.Limit(1)).
 		One(ctx, das.dbs().Reader)
 
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+
 		return false, err
 	}
 
 	if existingOfferData != nil {
-
+		notReturnedError := true
 		offersSet := core.DecodeOfferFromJSON(existingOfferData.OfferMetadata.JSON)
 
 		for _, offer := range offersSet.Offers {
-			if offer.Error != "" || offer.DeclineReason != "" {
-				return true, nil
-			}
+			isErrorEmpty := offer.Error == "" || offer.DeclineReason == ""
+			notReturnedError = notReturnedError && isErrorEmpty
 		}
 
+		return notReturnedError, nil
 	}
 
 	return true, nil
