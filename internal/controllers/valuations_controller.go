@@ -123,6 +123,17 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "already requested in last 30 days")
 	}
 
+	didGetErrorLastTime, err := vc.userDeviceService.LastRequestDidGiveError(c.Context(), ud.Id)
+
+	if err != nil {
+		vc.log.Err(err).Msg("failed to check if user can request instant offer")
+		return err
+	}
+
+	if didGetErrorLastTime {
+		return fiber.NewError(fiber.StatusBadRequest, "no offers found for you vehicle in last request")
+	}
+
 	request := core.OfferRequest{UserDeviceID: ud.Id}
 	requestBytes, err := json.Marshal(request)
 	if err != nil {

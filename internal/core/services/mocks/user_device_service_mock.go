@@ -111,6 +111,21 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceValuations(ctx, use
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceValuations", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceValuations), ctx, userDeviceID, countryCode)
 }
 
+// LastRequestDidGiveError mocks base method.
+func (m *MockUserDeviceAPIService) LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LastRequestDidGiveError", ctx, userDeviceID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LastRequestDidGiveError indicates an expected call of LastRequestDidGiveError.
+func (mr *MockUserDeviceAPIServiceMockRecorder) LastRequestDidGiveError(ctx, userDeviceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastRequestDidGiveError", reflect.TypeOf((*MockUserDeviceAPIService)(nil).LastRequestDidGiveError), ctx, userDeviceID)
+}
+
 // UpdateUserDeviceMetadata mocks base method.
 func (m *MockUserDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, request *grpc.UpdateUserDeviceMetadataRequest) error {
 	m.ctrl.T.Helper()
