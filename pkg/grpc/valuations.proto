@@ -10,6 +10,7 @@ service ValuationsService {
   rpc GetAllValuations(google.protobuf.Empty) returns (ValuationResponse);
   rpc GetUserDeviceValuation(DeviceValuationRequest) returns (DeviceValuation);
   rpc GetUserDeviceOffer(DeviceOfferRequest) returns (DeviceOffer);
+  rpc GetAllUserDeviceValuation(google.protobuf.Empty) returns (ValuationResponse);
 }
 
 message ValuationResponse {
