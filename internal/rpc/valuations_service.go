@@ -45,11 +45,11 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 					 from
                              (
 								select distinct on (vin) vin, 
-														pricing_metadata, 
-														jsonb_path_query(evd.pricing_metadata, '$.retail.kelley.book')::decimal as retail_price,
+														 drivly_pricing_metadata, 
+														jsonb_path_query(evd.drivly_pricing_metadata, '$.retail.kelley.book')::decimal as retail_price,
 														jsonb_path_query(evd.vincario_metadata, '$.market_price.price_avg')::decimal as vincario_price,
 														created_at
-       							from external_vin_data evd 
+       							from valuations evd 
 								order by vin, created_at desc
 							) as evd;`
 
@@ -58,11 +58,11 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 					 from
 						(
 							select distinct on (vin) vin, 
-													pricing_metadata, 
-													jsonb_path_query(evd.pricing_metadata, '$.retail.kelley.book')::decimal as retail_price, 
+													drivly_pricing_metadata, 
+													jsonb_path_query(evd.drivly_pricing_metadata, '$.retail.kelley.book')::decimal as retail_price, 
 													jsonb_path_query(evd.vincario_metadata, '$.market_price.price_avg')::decimal as vincario_price,
 													created_at
-							from external_vin_data evd 
+							from valuations evd 
 							where created_at > current_date - 7
 							order by vin, created_at desc
 						) as evd;`
