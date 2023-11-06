@@ -41,7 +41,9 @@ func NewLoadVinVerifiedValuationCommandHandler(dbs func() *db.ReaderWriter, logg
 }
 
 func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, command *LoadVinVerifiedValuationCommandRequest) error {
+	h.logger.Info().Msg("Starting Valuations Pull. Getting list of User Devices...")
 	all, err := h.userDeviceService.GetAllUserDevice(ctx, command.WMI)
+	h.logger.Info().Msgf("User Devices found: %d - Now let's work through them", len(all))
 
 	if err != nil {
 		return err
@@ -49,12 +51,13 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 
 	statsAggr := map[core.DataPullStatusEnum]int{}
 	for _, ud := range all {
+		fmt.Printf("Pulling valuation: https://admin.team.dimo.zone/user-devices/%s, country: %s, token_id: %d. Status: ", ud.Id, ud.CountryCode, ud.TokenId)
 		if ud.CountryCode == "USA" || ud.CountryCode == "CAN" || ud.CountryCode == "MEX" {
 			status, err := h.drivlyValuationService.PullValuation(ctx, ud.Id, ud.DeviceDefinitionId, *ud.Vin)
 			if err != nil {
 				h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling drivly data")
 			} else {
-				h.logger.Info().Msgf("Drivly %s vin: %s, country: %s", status, *ud.Vin, ud.CountryCode)
+				fmt.Printf("drivly %s", status)
 			}
 			statsAggr[status]++
 		} else {
@@ -62,7 +65,7 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 			if err != nil {
 				h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling vincario data")
 			} else {
-				h.logger.Info().Msgf("Vincario %s vin: %s, country: %s", status, *ud.Vin, ud.CountryCode)
+				fmt.Printf("vincario %s", status)
 			}
 			statsAggr[status]++
 		}
