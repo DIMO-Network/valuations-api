@@ -57,7 +57,7 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 			if err != nil {
 				h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling drivly data")
 			} else {
-				fmt.Printf("drivly %s", status)
+				fmt.Printf("drivly %s \n", status)
 			}
 			statsAggr[status]++
 		} else {
@@ -65,7 +65,7 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 			if err != nil {
 				h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling vincario data")
 			} else {
-				fmt.Printf("vincario %s", status)
+				fmt.Printf("vincario %s \n", status)
 			}
 			statsAggr[status]++
 		}
