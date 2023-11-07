@@ -66,4 +66,4 @@ jobs:
     schedule: 0 0 * * 0
     args:
       - '-c'
-      - /valuations-api valuations-pull; CODE=$?; echo "valuations-pull completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;
+      - /valuations-api pull-valuations; CODE=$?; echo "pull-valuations completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;

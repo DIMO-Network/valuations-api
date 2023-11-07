@@ -19,7 +19,7 @@ type loadValuationsCmd struct {
 	ddSvc         services.DeviceDefinitionsAPIService
 	userDeviceSvc services.UserDeviceAPIService
 	deviceDataSvc services.UserDeviceDataAPIService
-	wmi           *string
+	wmi           string
 }
 
 func (*loadValuationsCmd) Name() string { return "pull-valuations" }
@@ -30,21 +30,16 @@ func (*loadValuationsCmd) Usage() string {
 	return `pull-valuations -wmi <WMI 3 char>`
 }
 
-// nolint
 func (p *loadValuationsCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(p.wmi, "wmi", "", "WMI filter option to only get valuations for these")
+	f.StringVar(&p.wmi, "wmi", "", "WMI filter option to only get valuations for these")
 }
 
 func (p *loadValuationsCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	p.logger.Info().Msgf("Pull VIN info, valuations and pricing from driv.ly for USA and valuations from Vincario for EUR")
-	wmi := ""
-	if p.wmi != nil {
-		wmi = *p.wmi
-	}
 
 	handler := commands.NewLoadVinVerifiedValuationCommandHandler(p.pdb.DBS, p.logger, &p.settings, p.userDeviceSvc, p.ddSvc, p.deviceDataSvc)
 	err := handler.Execute(ctx, &commands.LoadVinVerifiedValuationCommandRequest{
-		WMI: wmi,
+		WMI: p.wmi,
 	})
 	if err != nil {
 		p.logger.Fatal().Err(err).Msg("error trying to pull valuations")
