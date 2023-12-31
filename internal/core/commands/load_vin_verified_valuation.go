@@ -3,8 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"sync"
+
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -84,19 +85,18 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 
 func (h loadVinVerifiedValuationCommandHandler) requestValuation(ctx context.Context, ud *grpc.UserDevice) (core.DataPullStatusEnum, error) {
 	fmt.Printf("Pulling valuation: https://admin.team.dimo.zone/user-devices/%s, country: %s, token_id: %d. Status: ", ud.Id, ud.CountryCode, ud.TokenId)
-	if ud.CountryCode == "USA" || ud.CountryCode == "CAN" || ud.CountryCode == "MEX" {
+	if ud.CountryCode == "USA" || ud.CountryCode == "CAN" || ud.CountryCode == "MEX" || ud.CountryCode == "PRI" {
 		status, err := h.drivlyValuationService.PullValuation(ctx, ud.Id, ud.DeviceDefinitionId, *ud.Vin)
 		fmt.Printf("drivly %s \n", status)
 		if err != nil {
 			h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling drivly data")
 		}
 		return status, nil
-	} else {
-		status, err := h.vincarioValuationService.PullValuation(ctx, ud.Id, ud.DeviceDefinitionId, *ud.Vin)
-		fmt.Printf("vincario %s \n", status)
-		if err != nil {
-			h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling vincario data")
-		}
-		return status, nil
 	}
+	status, err := h.vincarioValuationService.PullValuation(ctx, ud.Id, ud.DeviceDefinitionId, *ud.Vin)
+	fmt.Printf("vincario %s \n", status)
+	if err != nil {
+		h.logger.Err(err).Str("vin", *ud.Vin).Msg("error pulling vincario data")
+	}
+	return status, nil
 }

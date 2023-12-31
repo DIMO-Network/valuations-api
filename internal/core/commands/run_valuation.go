@@ -57,7 +57,8 @@ type RunTestSignalCommandResponse struct {
 }
 
 func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
-	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.ValuationSubject, h.NATSSvc.ValuationDurableConsumer, nats.AckWait(h.NATSSvc.AckTimeout))
+	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.ValuationSubject, h.NATSSvc.ValuationDurableConsumer,
+		nats.AckWait(h.NATSSvc.AckTimeout), nats.MaxDeliver(2))
 
 	if err != nil {
 		return err
