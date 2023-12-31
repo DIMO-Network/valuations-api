@@ -13,7 +13,8 @@ import (
 
 func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error {
 
-	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.OfferSubject, h.NATSSvc.OfferDurableConsumer, nats.AckWait(h.NATSSvc.AckTimeout))
+	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.OfferSubject, h.NATSSvc.OfferDurableConsumer,
+		nats.AckWait(h.NATSSvc.AckTimeout), nats.MaxDeliver(2))
 
 	if err != nil {
 		h.logger.Err(err).Msg("failed to subscribe to nats at offer sync")
@@ -54,16 +55,17 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 				err := json.Unmarshal(msg.Data, &payload)
 
 				if err != nil {
-					h.nak(msg)
-					h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to invalid payload")
+					_ = msg.Ack()
+					h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to invalid payload - not redelivering")
 					continue
 				}
 
 				status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID)
 
 				if err != nil && status != core.SkippedDataPullStatus {
-					h.nak(msg)
-					h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to internal error")
+					// todo: improvement - depending on status returned decide whether to redeliver using h.nak(msg)
+					_ = msg.Ack()
+					h.logger.Err(err).Str("payload", string(msg.Data)).Msg("failed to process offer request due to internal error - not redelivering")
 					continue
 				}
 
