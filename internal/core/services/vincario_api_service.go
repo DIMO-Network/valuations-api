@@ -87,18 +87,18 @@ type VincarioMarketValueResponse struct {
 		PriceCount    int    `json:"price_count"`
 		PriceCurrency string `json:"price_currency"`
 		PriceBelow    int    `json:"price_below"`
-		PriceMean     int    `json:"price_mean"`
+		PriceMedian   int    `json:"price_median"`
 		PriceAvg      int    `json:"price_avg"`
 		PriceAbove    int    `json:"price_above"`
 		PriceStdev    int    `json:"price_stdev"`
 	} `json:"market_price"`
 	MarketOdometer struct {
-		OdometerCount int    `json:"odometer_count"`
-		OdometerUnit  string `json:"odometer_unit"`
-		OdometerBelow int    `json:"odometer_below"`
-		OdometerMean  int    `json:"odometer_mean"`
-		OdometerAvg   int    `json:"odometer_avg"`
-		OdometerAbove int    `json:"odometer_above"`
-		OdometerStdev int    `json:"odometer_stdev"`
+		OdometerCount  int    `json:"odometer_count"`
+		OdometerUnit   string `json:"odometer_unit"`
+		OdometerBelow  int    `json:"odometer_below"`
+		OdometerMedian int    `json:"odometer_median"`
+		OdometerAvg    int    `json:"odometer_avg"`
+		OdometerAbove  int    `json:"odometer_above"`
+		OdometerStdev  int    `json:"odometer_stdev"`
 	} `json:"market_odometer"`
 }
