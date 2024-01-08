@@ -66,7 +66,7 @@ func vincarioPathBuilder(vin, id, key, secret string) string {
 
 	controlSum := hex.EncodeToString(bs[0:5])
 
-	return "/" + key + "/" + controlSum + "/" + id + "/" + vin + ".json"
+	return "/" + key + "/" + controlSum + "/" + id + "/" + vin + ".json?new"
 }
 
 type VincarioMarketValueResponse struct {
