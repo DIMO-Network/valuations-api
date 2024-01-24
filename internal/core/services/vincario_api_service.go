@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -53,6 +54,10 @@ func (va *vincarioAPIService) GetMarketValuation(vin string) (*VincarioMarketVal
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if data.MarketPrice.PriceAvg == 0 {
+		return nil, fmt.Errorf("invalid valuation with 0 value returned - %+v", data)
+	}
 
 	return &data, nil
 }
