@@ -18,6 +18,8 @@ issues:
   fix: true
 
 linters-settings:
+  exclude-rules:
+    - dir: pkg/grpc
   gci:
     # DEPRECATED: use `sections` and `prefix(github.com/org/project)` instead.
     local-prefixes: github.com/org/project
@@ -29,7 +31,7 @@ linters-settings:
     sections:
       - standard # Standard section: captures all standard packages.
       - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/DIMO-Network/devices-api) # Custom section: groups all imports with the specified Prefix.
+      - prefix(github.com/DIMO-Network/valuations-api) # Custom section: groups all imports with the specified Prefix.
       - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
       - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
     # Skip generated files.

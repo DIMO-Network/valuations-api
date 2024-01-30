@@ -21,7 +21,7 @@ import (
 	"github.com/gofiber/adaptor/v2"
 	jwtware "github.com/gofiber/contrib/jwt"
 	fiber "github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	cors "github.com/gofiber/fiber/v2/middleware/cors"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
