@@ -2,12 +2,13 @@ package api
 
 import (
 	"context"
-	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
-	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
+	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"

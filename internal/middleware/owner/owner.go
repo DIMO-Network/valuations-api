@@ -3,6 +3,7 @@ package owner
 import (
 	"context"
 	"fmt"
+
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/golang-jwt/jwt/v5"
