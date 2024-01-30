@@ -7,7 +7,7 @@ import (
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/golang-jwt/jwt/v5"
 
-	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	usersgrpc "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
@@ -26,7 +26,7 @@ var errNotFound = fiber.NewError(fiber.StatusNotFound, "Device not found.")
 //   - There must be a userDeviceID or ethAddr path parameter, and that device must exist.
 //   - Either the user owns the device, or the user's account has an Ethereum address that
 //     owns the corresponding NFT.
-func New(usersClient pb.UserServiceClient, devicesClient services.UserDeviceAPIService, logger *zerolog.Logger) fiber.Handler {
+func New(usersClient usersgrpc.UserServiceClient, devicesClient services.UserDeviceAPIService, logger *zerolog.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID := GetUserID(c)
 		udi := c.Params("userDeviceID")
@@ -57,7 +57,7 @@ func New(usersClient pb.UserServiceClient, devicesClient services.UserDeviceAPIS
 			return c.Next()
 		}
 
-		user, err := usersClient.GetUser(c.Context(), &pb.GetUserRequest{Id: userID})
+		user, err := usersClient.GetUser(c.Context(), &usersgrpc.GetUserRequest{Id: userID})
 		if err != nil {
 			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 				return errNotFound
