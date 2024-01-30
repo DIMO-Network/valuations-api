@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,7 +14,8 @@ func ErrorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 
 	code := fiber.StatusInternalServerError // Default 500 statuscode
 
-	e, fiberTypeErr := err.(*fiber.Error)
+	var e *fiber.Error
+	fiberTypeErr := errors.As(err, &e)
 	if fiberTypeErr {
 		// Override status code if fiber.Error type
 		code = e.Code

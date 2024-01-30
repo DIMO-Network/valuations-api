@@ -32,6 +32,7 @@ type Settings struct {
 	NATSValuationDurableConsumer string `yaml:"NATS_VALUATION_DURABLE_CONSUMER"`
 	NATSOfferSubject             string `yaml:"NATS_OFFER_SUBJECT"`
 	NATSOfferDurableConsumer     string `yaml:"NATS_OFFER_DURABLE_CONSUMER"`
+	UsersGRPCAddr                string `yaml:"USERS_GRPC_ADDR"`
 }
 
 func (s *Settings) IsProduction() bool {

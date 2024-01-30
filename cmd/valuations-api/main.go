@@ -61,6 +61,7 @@ func main() {
 	defer devicesConn.Close()
 	deviceDataSvc, devicedataConn := deps.getDeviceDataService()
 	defer devicedataConn.Close()
+	usersClient := deps.getUsersClient(logger, settings.UsersGRPCAddr)
 
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
@@ -76,7 +77,7 @@ func main() {
 
 	// Run API
 	if len(os.Args) == 1 {
-		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc, deps.getNATSService())
+		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc, deps.getNATSService(), usersClient)
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

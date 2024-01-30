@@ -1,6 +1,7 @@
 package main
 
 import (
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -62,4 +63,13 @@ func (dc *dependencyContainer) getNATSService() *services.NATSService {
 		dc.logger.Fatal().Err(err).Msg("failed to connect to NATS server")
 	}
 	return service
+}
+
+func (dc *dependencyContainer) getUsersClient(logger zerolog.Logger, usersAPIGRPCAddr string) pb.UserServiceClient {
+	usersConn, err := grpc.Dial(usersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", usersAPIGRPCAddr)
+	}
+	defer usersConn.Close()
+	return pb.NewUserServiceClient(usersConn)
 }
