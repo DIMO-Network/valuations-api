@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
 	"net"
 	"os"
@@ -19,7 +20,7 @@ import (
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
 	"github.com/gofiber/adaptor/v2"
 	jwtware "github.com/gofiber/contrib/jwt"
-	"github.com/gofiber/fiber/v2"
+	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -35,9 +36,9 @@ import (
 	_ "github.com/DIMO-Network/valuations-api/docs"
 )
 
-func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings,
-	ddSvc services.DeviceDefinitionsAPIService, userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService,
-	natsSvc *services.NATSService) {
+func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService,
+	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, natsSvc *services.NATSService,
+	usersClient grpc2.UserServiceClient) {
 
 	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
 
@@ -57,7 +58,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc, usersClient)
 	// nolint
 	defer app.Shutdown()
 
@@ -109,10 +110,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 	}
 }
 
-func startWebAPI(logger zerolog.Logger,
-	settings *config.Settings,
-	userDeviceSvc services.UserDeviceAPIService,
-	natsSrvc services.NATSService) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService, natsSrvc services.NATSService, usersClient grpc2.UserServiceClient) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -144,13 +142,13 @@ func startWebAPI(logger zerolog.Logger,
 	})
 
 	v1Auth := app.Group("/v1", jwtAuth)
+	// so that we can correctly lookup the userDeviceId owner as multiple user records could point to same user as defined by a wallet addr
 	deviceMw := owner.New(usersClient, userDeviceSvc, &logger)
 
-	// TODO: bring in udOwner stuff, but see if can put in shared - major refactor btw
-	v1Auth.Get("/user/devices/:userDeviceID/valuations", valuationsController.GetValuations)
-	v1Auth.Get("/user/devices/:userDeviceID/offers", valuationsController.GetOffers)
-
-	v1Auth.Get("/user/devices/:userDeviceID/instant-offer", valuationsController.GetInstantOffer)
+	udOwner := v1Auth.Group("/user/devices/:userDeviceID", deviceMw)
+	udOwner.Get("/valuations", valuationsController.GetValuations)
+	udOwner.Get("/offers", valuationsController.GetOffers)
+	udOwner.Get("/instant-offer", valuationsController.GetInstantOffer)
 
 	logger.Info().Msg("HTTP web server started on port " + settings.Port)
 	// Start Server from a different go routine
