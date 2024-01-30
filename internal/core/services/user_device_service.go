@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -25,6 +26,7 @@ import (
 //go:generate mockgen -source user_device_service.go -destination mocks/user_device_service_mock.go
 type UserDeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
+	GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error)
 	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
 	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
 	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
@@ -75,6 +77,26 @@ func (das *userDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, r
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 	_, err := deviceClient.UpdateUserDeviceMetadata(ctx, request)
 	return err
+}
+
+func (das *userDeviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error) {
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+
+	if len(ethAddr) > 2 && ethAddr[:2] == "0x" {
+		ethAddr = ethAddr[2:]
+	}
+
+	ethAddrBytes, err := hex.DecodeString(ethAddr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid ethereum address: %w", err)
+	}
+
+	userDevice, err := deviceClient.GetUserDeviceByEthAddr(ctx, &pb.GetUserDeviceByEthAddrRequest{EthAddr: ethAddrBytes})
+	if err != nil {
+		return nil, err
+	}
+
+	return userDevice, nil
 }
 
 // GetAllUserDevice gets all userDevices from devices-api

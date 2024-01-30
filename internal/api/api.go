@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
 	"net"
 	"os"
 	"os/signal"
@@ -143,6 +144,7 @@ func startWebAPI(logger zerolog.Logger,
 	})
 
 	v1Auth := app.Group("/v1", jwtAuth)
+	deviceMw := owner.New(usersClient, userDeviceSvc, &logger)
 
 	// TODO: bring in udOwner stuff, but see if can put in shared - major refactor btw
 	v1Auth.Get("/user/devices/:userDeviceID/valuations", valuationsController.GetValuations)

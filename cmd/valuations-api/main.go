@@ -61,6 +61,7 @@ func main() {
 	defer devicesConn.Close()
 	deviceDataSvc, devicedataConn := deps.getDeviceDataService()
 	defer devicedataConn.Close()
+	// users service
 
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
