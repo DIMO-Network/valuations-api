@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 
-	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
@@ -36,15 +35,11 @@ func NewValuationsController(log *zerolog.Logger,
 // @Router      /user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	userID := helpers.GetUserID(c)
+	//userID := helpers.GetUserID(c)
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
 
 	if err != nil {
 		return err
-	}
-
-	if ud.UserId != userID {
-		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
 
 	dVal, err := vc.userDeviceService.GetUserDeviceValuations(c.Context(), udi, ud.CountryCode)
@@ -66,16 +61,11 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Router      /user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	userID := helpers.GetUserID(c)
-	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
-
-	if err != nil {
-		return err
-	}
-
-	if ud.UserId != userID {
-		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
-	}
+	//userID := helpers.GetUserID(c)
+	//ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
+	//if err != nil {
+	//	return err
+	//}
 
 	dOffer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), udi)
 
@@ -97,7 +87,7 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	userID := helpers.GetUserID(c)
+	//userID := helpers.GetUserID(c)
 
 	localLog := vc.log.With().Str("user_device_id", udi).Logger()
 
@@ -106,10 +96,6 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	if err != nil {
 		vc.log.Err(err).Msg("failed to get user device")
 		return err
-	}
-
-	if ud.UserId != userID {
-		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this vehicle")
 	}
 
 	canRequestInsantOffer, err := vc.userDeviceService.CanRequestInstantOffer(c.Context(), ud.Id)
