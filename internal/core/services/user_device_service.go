@@ -216,7 +216,9 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 				drivlyVal.UserDisplayPrice = (drivlyVal.Retail + drivlyVal.TradeIn) / 2
 				dVal.ValuationSets = append(dVal.ValuationSets, drivlyVal)
 			} else {
-				das.logger.Warn().Msg("did not find a drivly trade-in or retail value, or json in unexpected format")
+				das.logger.Warn().Str("vin", valuationData.Vin).
+					Str("user_device_id", valuationData.UserDeviceID.String).
+					Msgf("did not find a drivly trade-in or retail value, or json in unexpected format")
 			}
 		} else if valuationData.VincarioMetadata.Valid {
 			ratio := 1.0

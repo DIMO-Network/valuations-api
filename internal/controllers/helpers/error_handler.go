@@ -24,8 +24,8 @@ func ErrorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 	codeStr := strconv.Itoa(code)
 
 	logger.Err(err).Str("httpStatusCode", codeStr).
-		Str("httpMethod", c.Method()).
-		Str("httpPath", c.Path()).
+		Str("method", c.Method()).
+		Str("path", c.Path()).
 		Msg("caught an error from http request")
 	// return an opaque error if we're in a higher level environment and we haven't specified an fiber type err.
 	if !fiberTypeErr && isProduction {

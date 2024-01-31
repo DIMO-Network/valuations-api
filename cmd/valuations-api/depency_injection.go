@@ -65,11 +65,10 @@ func (dc *dependencyContainer) getNATSService() *services.NATSService {
 	return service
 }
 
-func (dc *dependencyContainer) getUsersClient(logger zerolog.Logger, usersAPIGRPCAddr string) pb.UserServiceClient {
+func (dc *dependencyContainer) getUsersClient(logger zerolog.Logger, usersAPIGRPCAddr string) (pb.UserServiceClient, *grpc.ClientConn) {
 	usersConn, err := grpc.Dial(usersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", usersAPIGRPCAddr)
 	}
-	defer usersConn.Close()
-	return pb.NewUserServiceClient(usersConn)
+	return pb.NewUserServiceClient(usersConn), usersConn
 }

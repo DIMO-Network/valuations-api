@@ -61,7 +61,8 @@ func main() {
 	defer devicesConn.Close()
 	deviceDataSvc, devicedataConn := deps.getDeviceDataService()
 	defer devicedataConn.Close()
-	usersClient := deps.getUsersClient(logger, settings.UsersGRPCAddr)
+	usersClient, usersConn := deps.getUsersClient(logger, settings.UsersGRPCAddr)
+	defer usersConn.Close()
 
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
