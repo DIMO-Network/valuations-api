@@ -218,7 +218,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 			} else {
 				das.logger.Warn().Str("vin", valuationData.Vin).
 					Str("user_device_id", valuationData.UserDeviceID.String).
-					Msgf("did not find a drivly trade-in or retail value, or json in unexpected format")
+					Msgf("did not find a drivly trade-in or retail value, or json in unexpected format. id: %s", valuationData.ID)
 			}
 		} else if valuationData.VincarioMetadata.Valid {
 			ratio := 1.0
@@ -340,6 +340,14 @@ func extractDrivlyValuation(drivlyJSON []byte, key string) int {
 	if gjson.GetBytes(drivlyJSON, key+".edmunds.average").Exists() {
 		values := gjson.GetManyBytes(drivlyJSON, key+".edmunds.rough", key+".edmunds.average", key+".edmunds.clean")
 		pricings["edmunds"] = int(values[1].Int())
+	}
+	if gjson.GetBytes(drivlyJSON, key+".nada.book").Exists() {
+		values := gjson.GetManyBytes(drivlyJSON, key+".nada.base", key+".nada.avgBook", key+".nada.book")
+		pricings["nada"] = int(values[1].Int())
+	}
+	if gjson.GetBytes(drivlyJSON, key+".cargurus").Exists() {
+		values := gjson.GetManyBytes(drivlyJSON, key+".cargurus")
+		pricings["cargurus"] = int(values[0].Int())
 	}
 	if len(pricings) > 1 {
 		sum := 0
