@@ -60,6 +60,7 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.ValuationSubject, h.NATSSvc.ValuationDurableConsumer,
 		nats.AckWait(h.NATSSvc.AckTimeout))
 	// nats.MaxDeliver(2) if add this get error: configuration requests max deliver to be 2, but consumer's value is -1 .... but where is the consumer
+	// this is b/c their API sucks: https://github.com/nats-io/nats.go/issues/1035
 
 	if err != nil {
 		return err
@@ -83,8 +84,12 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 			default:
 				err := h.processMessage(ctx, localLog, msg)
 				if err != nil {
-					h.nak(msg)
 					localLog.Err(err).Str("payload", string(msg.Data)).Msg("failed to process valuation request")
+
+					ackErr := msg.Ack() // if we nak, then it just keeps retrying forever, and it isn't viable to set the MaxDeliver
+					if ackErr != nil {
+						localLog.Err(err).Msg("message ack failed")
+					}
 					continue
 				}
 				if err := msg.Ack(); err != nil {
@@ -92,13 +97,6 @@ func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 				}
 			}
 		}
-	}
-}
-
-func (h *runValuationCommandHandler) nak(msg *nats.Msg) {
-	err := msg.Nak()
-	if err != nil {
-		h.logger.Err(err).Msg("message nak failed")
 	}
 }
 

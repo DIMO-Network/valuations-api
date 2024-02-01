@@ -40,7 +40,10 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 			mtd, err := msg.Metadata()
 
 			if err != nil {
-				h.nak(msg)
+				ackErr := msg.Ack() // if we nak, then it just keeps retrying forever, and it isn't viable to set the MaxDeliver
+				if ackErr != nil {
+					h.logger.Err(err).Msg("message ack failed")
+				}
 				h.logger.Err(err).Msg("failed to process offer request due to invalid payload")
 				continue
 			}
