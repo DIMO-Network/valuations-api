@@ -58,7 +58,8 @@ type RunTestSignalCommandResponse struct {
 
 func (h *runValuationCommandHandler) Execute(ctx context.Context) error {
 	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.ValuationSubject, h.NATSSvc.ValuationDurableConsumer,
-		nats.AckWait(h.NATSSvc.AckTimeout), nats.MaxDeliver(2))
+		nats.AckWait(h.NATSSvc.AckTimeout))
+	// nats.MaxDeliver(2) if add this get error: configuration requests max deliver to be 2, but consumer's value is -1 .... but where is the consumer
 
 	if err != nil {
 		return err

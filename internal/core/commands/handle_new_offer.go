@@ -12,9 +12,9 @@ import (
 )
 
 func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error {
-
 	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.OfferSubject, h.NATSSvc.OfferDurableConsumer,
-		nats.AckWait(h.NATSSvc.AckTimeout), nats.MaxDeliver(2))
+		nats.AckWait(h.NATSSvc.AckTimeout))
+	// nats.MaxDeliver(2) if add this get error: configuration requests max deliver to be 2, but consumer's value is -1 .... but where is the consumer
 
 	if err != nil {
 		h.logger.Err(err).Msg("failed to subscribe to nats at offer sync")
