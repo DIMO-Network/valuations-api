@@ -35,20 +35,17 @@ func NewValuationsController(log *zerolog.Logger,
 // @Router      /user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	//userID := helpers.GetUserID(c)
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
-
 	if err != nil {
 		return err
 	}
 
-	dVal, err := vc.userDeviceService.GetUserDeviceValuations(c.Context(), udi, ud.CountryCode)
-
+	valuation, err := vc.userDeviceService.GetUserDeviceValuations(c.Context(), udi, ud.CountryCode)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(dVal)
+	return c.JSON(valuation)
 }
 
 // GetOffers godoc
@@ -61,19 +58,12 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Router      /user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	//userID := helpers.GetUserID(c)
-	//ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
-	//if err != nil {
-	//	return err
-	//}
-
-	dOffer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), udi)
-
+	offer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), udi)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(dOffer)
+	return c.JSON(offer)
 }
 
 // GetInstantOffer godoc
@@ -87,19 +77,16 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Router      /user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
-	//userID := helpers.GetUserID(c)
 
 	localLog := vc.log.With().Str("user_device_id", udi).Logger()
 
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
-
 	if err != nil {
 		vc.log.Err(err).Msg("failed to get user device")
 		return err
 	}
 
 	canRequestInsantOffer, err := vc.userDeviceService.CanRequestInstantOffer(c.Context(), ud.Id)
-
 	if err != nil {
 		vc.log.Err(err).Msg("failed to check if user can request instant offer")
 		return err
