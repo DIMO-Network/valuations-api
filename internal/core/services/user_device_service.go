@@ -5,8 +5,12 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"github.com/ericlagergren/decimal"
+	"github.com/volatiletech/sqlboiler/v4/types"
 	"io"
 	"log"
+	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -26,13 +30,18 @@ import (
 //go:generate mockgen -source user_device_service.go -destination mocks/user_device_service_mock.go
 type UserDeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
+	GetUserDeviceByTokenID(ctx context.Context, tokenID *big.Int) (*pb.UserDevice, error)
 	GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error)
 	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
 	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
 	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
+	GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int) (*core.DeviceOffer, error)
 	GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error)
+	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error)
 	CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error)
+	CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
 	LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error)
+	LastRequestDidGiveErrorByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
 }
 
 type userDeviceAPIService struct {
@@ -64,6 +73,23 @@ func (das *userDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID
 	var userDevice *pb.UserDevice
 	userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
 		Id: userDeviceID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return userDevice, nil
+}
+
+// GetUserDeviceByTokenID gets the userDevice from devices-api, checks in local cache first
+func (das *userDeviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID *big.Int) (*pb.UserDevice, error) {
+	var err error
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+
+	var userDevice *pb.UserDevice
+	userDevice, err = deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
+		TokenId: tokenID.Int64(),
 	})
 
 	if err != nil {
@@ -124,10 +150,6 @@ func (das *userDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi strin
 }
 
 func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error) {
-	dOffer := core.DeviceOffer{
-		OfferSets: []core.OfferSet{},
-	}
-
 	// Drivly data
 	drivlyVinData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
@@ -137,6 +159,30 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
+	}
+
+	return getUserDeviceOffers(drivlyVinData, nil)
+}
+
+func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int) (*core.DeviceOffer, error) {
+	// Drivly data
+	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
+	drivlyVinData, err := models.Valuations(
+		models.ValuationWhere.TokenID.EQ(tid),
+		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
+		qm.OrderBy("updated_at desc"),
+		qm.Limit(1)).One(ctx, das.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	return getUserDeviceOffers(drivlyVinData, &take)
+}
+
+func getUserDeviceOffers(drivlyVinData *models.Valuation, take *int) (*core.DeviceOffer, error) {
+	dOffer := core.DeviceOffer{
+		OfferSets: []core.OfferSet{},
 	}
 
 	if drivlyVinData != nil {
@@ -160,17 +206,21 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 		}
 
 		dOffer.OfferSets = append(dOffer.OfferSets, drivlyOffers)
+
+		sort.Slice(dOffer.OfferSets, func(i, j int) bool {
+			return dOffer.OfferSets[i].Updated > dOffer.OfferSets[j].Updated
+		})
+
+		if take != nil && len(dOffer.OfferSets) > *take {
+			dOffer.OfferSets = dOffer.OfferSets[:*take]
+		}
+
 	}
 
 	return &dOffer, nil
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error) {
-
-	dVal := core.DeviceValuation{
-		ValuationSets: []core.ValuationSet{},
-	}
-
 	// Drivly data
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
@@ -180,6 +230,30 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
+	}
+
+	return das.getUserDeviceValuations(valuationData, countryCode, nil)
+}
+
+func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error) {
+	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
+	// Drivly data
+	valuationData, err := models.Valuations(
+		models.ValuationWhere.TokenID.EQ(tid),
+		qm.Where(fmt.Sprintf("%s is not null or %s is not null", models.ValuationColumns.DrivlyPricingMetadata, models.ValuationColumns.VincarioMetadata)),
+		qm.OrderBy("updated_at desc"),
+		qm.Limit(1)).One(ctx, das.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	return das.getUserDeviceValuations(valuationData, countryCode, &take)
+}
+
+func (das *userDeviceAPIService) getUserDeviceValuations(valuationData *models.Valuation, countryCode string, take *int) (*core.DeviceValuation, error) {
+	dVal := core.DeviceValuation{
+		ValuationSets: []core.ValuationSet{},
 	}
 
 	if valuationData != nil {
@@ -271,6 +345,14 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 		}
 	}
 
+	sort.Slice(dVal.ValuationSets, func(i, j int) bool {
+		return dVal.ValuationSets[i].Updated > dVal.ValuationSets[j].Updated
+	})
+
+	if take != nil && len(dVal.ValuationSets) > *take {
+		dVal.ValuationSets = dVal.ValuationSets[:*take]
+	}
+
 	return &dVal, nil
 }
 
@@ -286,6 +368,25 @@ func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, use
 		return false, err
 	}
 
+	return canRequestInstantOffer(existingOfferData)
+}
+
+func (das *userDeviceAPIService) CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error) {
+	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
+	existingOfferData, err := models.Valuations(
+		models.ValuationWhere.TokenID.EQ(tid),
+		models.ValuationWhere.OfferMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(ctx, das.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, err
+	}
+
+	return canRequestInstantOffer(existingOfferData)
+}
+
+func canRequestInstantOffer(existingOfferData *models.Valuation) (bool, error) {
 	if existingOfferData != nil {
 		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 7)) {
 			return false, nil
@@ -311,6 +412,41 @@ func (das *userDeviceAPIService) LastRequestDidGiveError(ctx context.Context, us
 		return false, err
 	}
 
+	if existingOfferData != nil {
+		notReturnedError := true
+		offersSet := core.DecodeOfferFromJSON(existingOfferData.OfferMetadata.JSON)
+
+		for _, offer := range offersSet.Offers {
+			isErrorEmpty := offer.Error == "" || offer.DeclineReason == ""
+			notReturnedError = notReturnedError && isErrorEmpty
+		}
+
+		return notReturnedError, nil
+	}
+
+	return true, nil
+}
+
+func (das *userDeviceAPIService) LastRequestDidGiveErrorByTokenID(ctx context.Context, tokenID *big.Int) (bool, error) {
+	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
+	existingOfferData, err := models.Valuations(
+		models.ValuationWhere.TokenID.EQ(tid),
+		models.ValuationWhere.OfferMetadata.IsNotNull(),
+		qm.OrderBy("updated_at desc"), qm.Limit(1)).
+		One(ctx, das.dbs().Reader)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return lastRequestDidGiveError(existingOfferData)
+}
+
+func lastRequestDidGiveError(existingOfferData *models.Valuation) (bool, error) {
 	if existingOfferData != nil {
 		notReturnedError := true
 		offersSet := core.DecodeOfferFromJSON(existingOfferData.OfferMetadata.JSON)

@@ -133,6 +133,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
 	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, &natsSrvc)
+	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, &natsSrvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
@@ -150,6 +151,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	udOwner.Get("/valuations", valuationsController.GetValuations)
 	udOwner.Get("/offers", valuationsController.GetOffers)
 	udOwner.Get("/instant-offer", valuationsController.GetInstantOffer)
+
+	vOwner := v1Auth.Group("/vehicles/:tokenId", deviceMw)
+	vOwner.Get("/valuations", vehiclesController.GetValuations)
+	vOwner.Get("/offers", vehiclesController.GetOffers)
+	vOwner.Get("/instant-offer", vehiclesController.GetInstantOffer)
 
 	logger.Info().Msg("HTTP web server started on port " + settings.Port)
 	// Start Server from a different go routine
