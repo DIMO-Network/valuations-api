@@ -78,8 +78,8 @@ github.com/DIMO-Network/device-definitions-api v1.0.35 h1:lq9b1ctngRaqj1tEYVpNNs
 github.com/DIMO-Network/device-definitions-api v1.0.35/go.mod h1:MwWv2OLNGcyA76Pcbxyipu+vFaM8gw/G7YnX+SiEhUk=
 github.com/DIMO-Network/devices-api v1.24.4 h1:dM6NxM0kdXJbeq7FmNwiBjnj2csYeYFnHS1u6+FF9xI=
 github.com/DIMO-Network/devices-api v1.24.4/go.mod h1:tbqEL3dBTSgbjrTaU1C9QgxLWqHsiqD88moj0iF8BR0=
-github.com/DIMO-Network/shared v0.10.6 h1:ceG09AQ/3wLehxrVCgiH97iEYPC00yQezv2oGSzetYs=
-github.com/DIMO-Network/shared v0.10.6/go.mod h1:sfeTTaAf4Y5aU15yGTksdZejJP+X6M2n2M70Qm5+Rqk=
+github.com/DIMO-Network/shared v0.10.8 h1:cXbb/YcAxKjmq6UJMNxaTdVdECBN8UXOzos7XjZdTFs=
+github.com/DIMO-Network/shared v0.10.8/go.mod h1:sfeTTaAf4Y5aU15yGTksdZejJP+X6M2n2M70Qm5+Rqk=
 github.com/DIMO-Network/users-api v0.6.3 h1:pqm9Mb/N+lUn+pXrbH2CAVV/+dz8yhFHJ5vnXr2DQHs=
 github.com/DIMO-Network/users-api v0.6.3/go.mod h1:aIZ41w04/Vfb8xqxA4UeNT0N/CoyPEjeGWRuLa98OEo=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=

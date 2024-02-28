@@ -89,7 +89,7 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 	return c.JSON(offer)
 }
 
-// GetInstantOffer godoc
+// RequestInstantOffer godoc
 // @Description makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
 // @Description You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
 // @Tags        offers
@@ -98,7 +98,7 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 // @Success     200
 // @Security    BearerAuth
 // @Router      /vehicles/{tokenId}/instant-offer [get]
-func (vc *VehiclesController) GetInstantOffer(c *fiber.Ctx) error {
+func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	tidStr := c.Params("tokenId")
 	tokenID, ok := new(big.Int).SetString(tidStr, 10)
 	if !ok {

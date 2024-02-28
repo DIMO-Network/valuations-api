@@ -6,9 +6,10 @@ require (
 	github.com/DIMO-Network/device-data-api v0.8.92
 	github.com/DIMO-Network/device-definitions-api v1.0.35
 	github.com/DIMO-Network/devices-api v1.24.4
-	github.com/DIMO-Network/shared v0.10.6
+	github.com/DIMO-Network/shared v0.10.8
 	github.com/DIMO-Network/users-api v0.6.3
 	github.com/docker/go-connections v0.5.0
+	github.com/ericlagergren/decimal v0.0.0-20211103172832-aca2edc11f73
 	github.com/ethereum/go-ethereum v1.13.3
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/adaptor/v2 v2.2.1
@@ -47,7 +48,6 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/ericlagergren/decimal v0.0.0-20211103172832-aca2edc11f73 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
