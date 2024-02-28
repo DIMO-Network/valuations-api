@@ -282,7 +282,7 @@ func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, use
 	}
 
 	if existingOfferData != nil {
-		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 30)) {
+		if existingOfferData.CreatedAt.After(time.Now().Add(-time.Hour * 24 * 7)) {
 			return false, nil
 		}
 	}
