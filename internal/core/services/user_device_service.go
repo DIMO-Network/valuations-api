@@ -222,10 +222,8 @@ func getUserDeviceOffers(drivlyVinData *models.Valuation, take *int) (*core.Devi
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error) {
-	// Drivly data
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
-		qm.Where(fmt.Sprintf("%s is not null or %s is not null", models.ValuationColumns.DrivlyPricingMetadata, models.ValuationColumns.VincarioMetadata)),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(ctx, das.dbs().Reader)
 
@@ -238,10 +236,9 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 
 func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error) {
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
-	// Drivly data
+
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
-		qm.Where(fmt.Sprintf("%s is not null or %s is not null", models.ValuationColumns.DrivlyPricingMetadata, models.ValuationColumns.VincarioMetadata)),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).One(ctx, das.dbs().Reader)
 
