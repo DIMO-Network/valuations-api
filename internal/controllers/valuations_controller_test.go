@@ -201,23 +201,14 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
 	}, nil)
 
 	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
-	response, _ := s.app.Test(request, 2000)
+	response, err := s.app.Test(request, 2000)
+	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
 func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
-
 	udID := ksuid.New().String()
-	vin := "vinny"
-
-	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
-		Id:           udID,
-		UserId:       userID,
-		VinConfirmed: true,
-		Vin:          &vin,
-		CountryCode:  "USA",
-	}, nil)
 
 	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), udID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{

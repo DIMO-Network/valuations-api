@@ -4,8 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"go.uber.org/mock/gomock"
 

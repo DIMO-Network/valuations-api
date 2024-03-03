@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"encoding/json"
+	"math/big"
+	"strconv"
+
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"math/big"
-	"strconv"
 )
 
 type VehiclesController struct {
@@ -40,7 +41,7 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 	if !ok {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse token id.")
 	}
-
+	// todo: do we really need this if we're validating the privilege token?
 	ud, err := vc.userDeviceService.GetUserDeviceByTokenID(c.Context(), tokenID)
 	if err != nil {
 		return err
@@ -51,7 +52,7 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 	if err != nil || take <= 0 {
 		take = 10
 	}
-
+	// todo: why is the countrycode needed?
 	valuation, err := vc.userDeviceService.GetUserDeviceValuationsByTokenID(c.Context(), tokenID, ud.CountryCode, take)
 	if err != nil {
 		return err
