@@ -144,6 +144,11 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 
 		requestJSON := drivlyVinData.RequestMetadata.JSON
 		drivlyOffers.Updated = drivlyVinData.UpdatedAt.Format(time.RFC3339)
+		if drivlyVinData.UpdatedAt.Add(time.Hour * 24 * 7).Before(time.Now()) {
+			for i := range drivlyOffers.Offers {
+				drivlyOffers.Offers[i].URL = ""
+			}
+		}
 
 		requestMileage := gjson.GetBytes(requestJSON, "mileage")
 		if requestMileage.Exists() {

@@ -93,7 +93,7 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	}
 
 	if !canRequestInsantOffer {
-		return fiber.NewError(fiber.StatusBadRequest, "already requested in last 30 days")
+		return fiber.NewError(fiber.StatusBadRequest, "already requested in last 7 days")
 	}
 
 	didGetErrorLastTime, err := vc.userDeviceService.LastRequestDidGiveError(c.Context(), ud.Id)
