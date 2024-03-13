@@ -150,7 +150,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	privilegeAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
 		ErrorHandler: func(_ *fiber.Ctx, err error) error {
-			logger.Err(err).Msg("Privilege token error.")
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
 	})
@@ -168,7 +167,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	udOwner.Get("/offers", valuationsController.GetOffers)
 	udOwner.Get("/instant-offer", valuationsController.GetInstantOffer)
 
-	vOwner := app.Group("/v1/vehicles/:tokenId", privilegeAuth)
+	vOwner := app.Group("/v2/vehicles/:tokenId", privilegeAuth)
 	vOwner.Get("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetValuations)
 	vOwner.Get("/offers", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetOffers)
 	vOwner.Post("/instant-offer", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.RequestInstantOffer)

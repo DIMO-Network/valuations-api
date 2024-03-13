@@ -28,7 +28,7 @@ func NewVehiclesController(log *zerolog.Logger,
 }
 
 // GetValuations godoc
-// @Description gets valuations for a particular user device. Includes only price valuations, not offers. only gets the latest valuation.
+// @Description gets valuations for a particular user device. Includes only price valuations, not offers. gets list of most recent
 // @Tags        valuations
 // @Produce     json
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
@@ -53,6 +53,8 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 		take = 10
 	}
 	// todo: why is the countrycode needed?
+	// todo: return a list of valuations, but code in here I think returns only latest.
+	// todo: odometer used for valuation? and was odo estimated, actual or used market average - maybe used market avg is just estimated
 	valuation, err := vc.userDeviceService.GetUserDeviceValuationsByTokenID(c.Context(), tokenID, ud.CountryCode, take)
 	if err != nil {
 		return err
@@ -62,7 +64,7 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 }
 
 // GetOffers godoc
-// @Description gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull.
+// @Description gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull newer. Returns list.
 // @Tags        offers
 // @Produce     json
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
@@ -81,7 +83,7 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 	if err != nil || take <= 0 {
 		take = 10
 	}
-
+	// todo change below to get list. Make sure that if older than 7 days does not include offer link
 	offer, err := vc.userDeviceService.GetUserDeviceOffersByTokenID(c.Context(), tokenID, take)
 	if err != nil {
 		return err
