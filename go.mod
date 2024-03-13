@@ -33,7 +33,7 @@ require (
 	github.com/volatiletech/strmangle v0.0.6
 	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.61.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
