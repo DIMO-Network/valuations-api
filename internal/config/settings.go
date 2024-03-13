@@ -34,7 +34,7 @@ type Settings struct {
 	NATSOfferDurableConsumer     string `yaml:"NATS_OFFER_DURABLE_CONSUMER"`
 	UsersGRPCAddr                string `yaml:"USERS_GRPC_ADDR"`
 	VehicleNFTAddress            string `yaml:"VEHICLE_NFT_ADDRESS"`
-	TokenExchangeJWTKeySetURL    string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
+	TokenExchangeJWTKeySetURL    string `yaml:"TOKEN_EXCHANGE_JWT_KEY_SET_URL"`
 }
 
 func (s *Settings) IsProduction() bool {
