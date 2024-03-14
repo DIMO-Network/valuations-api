@@ -30,7 +30,7 @@ func NewValuationsController(log *zerolog.Logger,
 // @Tags        valuations
 // @Produce     json
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
-// @Success     200 {object} models.DeviceValuation
+// @Success     200 {object} core.DeviceValuation
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
@@ -53,7 +53,7 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Tags        offers
 // @Produce     json
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
-// @Success     200 {object} models.DeviceOffer
+// @Success     200 {object} core.DeviceOffer
 // @Security    BearerAuth
 // @Router      /user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {

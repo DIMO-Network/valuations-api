@@ -16,6 +16,16 @@ definitions:
           $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.ValuationSet'
         type: array
     type: object
+  github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum:
+    enum:
+    - Real
+    - Estimated
+    - Market
+    type: string
+    x-enum-varnames:
+    - Real
+    - Estimated
+    - Market
   github_com_DIMO-Network_valuations-api_internal_core_models.Offer:
     properties:
       declineReason:
@@ -67,7 +77,13 @@ definitions:
         description: The mileage used for the valuation
         type: integer
       odometer:
+        description: Odometer used for calculating values
         type: integer
+      odometerMeasurementType:
+        allOf:
+        - $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum'
+        description: whether estimated, real, or from the market (eg. vincario). Market,
+          Estimated, Real
       odometerUnit:
         type: string
       retail:
@@ -173,6 +189,68 @@ paths:
       - description: userDeviceID for vehicle to get offers
         in: path
         name: userDeviceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation'
+      security:
+      - BearerAuth: []
+      tags:
+      - valuations
+  /vehicles/{tokenId}/instant-offer:
+    post:
+      description: |-
+        makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
+        You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
+      parameters:
+      - description: tokenId for vehicle to get offers
+        in: path
+        name: tokenId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      tags:
+      - offers
+  /vehicles/{tokenId}/offers:
+    get:
+      description: gets any existing offers for a particular user device. You must
+        call instant-offer endpoint first to pull newer. Returns list.
+      parameters:
+      - description: tokenId for vehicle to get offers
+        in: path
+        name: tokenId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer'
+      security:
+      - BearerAuth: []
+      tags:
+      - offers
+  /vehicles/{tokenId}/valuations:
+    get:
+      description: gets valuations for a particular user device. Includes only price
+        valuations, not offers. gets list of most recent
+      parameters:
+      - description: tokenId for vehicle to get offers
+        in: path
+        name: tokenId
         required: true
         type: string
       produces:

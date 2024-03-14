@@ -32,7 +32,7 @@ func NewVehiclesController(log *zerolog.Logger,
 // @Tags        valuations
 // @Produce     json
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
-// @Success     200 {object} models.DeviceValuation
+// @Success     200 {object} core.DeviceValuation
 // @Security    BearerAuth
 // @Router      /vehicles/{tokenId}/valuations [get]
 func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
@@ -41,7 +41,6 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 	if !ok {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse token id.")
 	}
-	// todo: do we really need this if we're validating the privilege token?
 	ud, err := vc.userDeviceService.GetUserDeviceByTokenID(c.Context(), tokenID)
 	if err != nil {
 		return err
@@ -52,9 +51,6 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 	if err != nil || take <= 0 {
 		take = 10
 	}
-	// todo: why is the countrycode needed?
-	// todo: return a list of valuations, but code in here I think returns only latest.
-	// todo: odometer used for valuation? and was odo estimated, actual or used market average - maybe used market avg is just estimated
 	valuation, err := vc.userDeviceService.GetUserDeviceValuationsByTokenID(c.Context(), tokenID, ud.CountryCode, take)
 	if err != nil {
 		return err
@@ -68,7 +64,7 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 // @Tags        offers
 // @Produce     json
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
-// @Success     200 {object} models.DeviceOffer
+// @Success     200 {object} core.DeviceOffer
 // @Security    BearerAuth
 // @Router      /vehicles/{tokenId}/offers [get]
 func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
@@ -100,7 +96,7 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
 // @Success     200
 // @Security    BearerAuth
-// @Router      /vehicles/{tokenId}/instant-offer [get]
+// @Router      /vehicles/{tokenId}/instant-offer [post]
 func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	tidStr := c.Params("tokenId")
 	tokenID, ok := new(big.Int).SetString(tidStr, 10)

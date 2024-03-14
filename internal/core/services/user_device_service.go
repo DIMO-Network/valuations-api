@@ -225,133 +225,130 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
 		qm.OrderBy("updated_at desc"),
-		qm.Limit(1)).One(ctx, das.dbs().Reader)
+		qm.Limit(1)).All(ctx, das.dbs().Reader)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	return das.getUserDeviceValuations(valuationData, countryCode, nil)
+	return das.getUserDeviceValuations(valuationData, countryCode)
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error) {
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
 
-	valuationData, err := models.Valuations(
+	valuations, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
 		qm.OrderBy("updated_at desc"),
-		qm.Limit(1)).One(ctx, das.dbs().Reader)
+		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	return das.getUserDeviceValuations(valuationData, countryCode, &take)
+	return das.getUserDeviceValuations(valuations, countryCode)
 }
 
-func (das *userDeviceAPIService) getUserDeviceValuations(valuationData *models.Valuation, countryCode string, take *int) (*core.DeviceValuation, error) {
+func (das *userDeviceAPIService) getUserDeviceValuations(valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
 	dVal := core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{},
 	}
 
-	if valuationData != nil {
-		if valuationData.DrivlyPricingMetadata.Valid {
-			drivlyVal := core.ValuationSet{
-				Vendor:        "drivly",
-				TradeInSource: "drivly",
-				RetailSource:  "drivly",
-				Updated:       valuationData.UpdatedAt.Format(time.RFC3339),
-			}
-			drivlyJSON := valuationData.DrivlyPricingMetadata.JSON
-			requestJSON := valuationData.RequestMetadata.JSON
-			drivlyMileage := gjson.GetBytes(drivlyJSON, "mileage")
-			if drivlyMileage.Exists() {
-				drivlyVal.Mileage = int(drivlyMileage.Int())
-				drivlyVal.Odometer = int(drivlyMileage.Int())
-				drivlyVal.OdometerUnit = "miles"
-			} else {
-				requestMileage := gjson.GetBytes(requestJSON, "mileage")
-				if requestMileage.Exists() {
-					drivlyVal.Mileage = int(requestMileage.Int())
-				}
-			}
-			requestZipCode := gjson.GetBytes(requestJSON, "zipCode")
-			if requestZipCode.Exists() {
-				drivlyVal.ZipCode = requestZipCode.String()
-			}
-			// Drivly Trade-In
-			drivlyVal.TradeIn = extractDrivlyValuation(drivlyJSON, "trade")
-			drivlyVal.TradeInAverage = drivlyVal.TradeIn
-			// Drivly Retail
-			drivlyVal.Retail = extractDrivlyValuation(drivlyJSON, "retail")
-			drivlyVal.RetailAverage = drivlyVal.Retail
-			drivlyVal.Currency = "USD"
-
-			// often drivly saves valuations with 0 for value, if this is case do not consider it
-			if drivlyVal.Retail > 0 || drivlyVal.TradeIn > 0 {
-				// set the price to display to users
-				drivlyVal.UserDisplayPrice = (drivlyVal.Retail + drivlyVal.TradeIn) / 2
-				dVal.ValuationSets = append(dVal.ValuationSets, drivlyVal)
-			} else {
-				das.logger.Warn().Str("vin", valuationData.Vin).
-					Str("user_device_id", valuationData.UserDeviceID.String).
-					Msgf("did not find a drivly trade-in or retail value, or json in unexpected format. id: %s", valuationData.ID)
-			}
-		} else if valuationData.VincarioMetadata.Valid {
-			ratio := 1.0
-
-			vincarioVal := core.ValuationSet{
-				Vendor:        "vincario",
-				TradeInSource: "vincario",
-				RetailSource:  "vincario",
-				Updated:       valuationData.UpdatedAt.Format(time.RFC3339),
-			}
-
-			if strings.EqualFold(countryCode, "TUR") {
-				ratio = 1.5
-			}
-
-			valJSON := valuationData.VincarioMetadata.JSON
-			requestJSON := valuationData.RequestMetadata.JSON
-			odometerMarket := gjson.GetBytes(valJSON, "market_odometer.odometer_avg")
-			if odometerMarket.Exists() {
-				vincarioVal.Mileage = int(odometerMarket.Int())
-				vincarioVal.Odometer = int(odometerMarket.Int())
-				vincarioVal.OdometerUnit = gjson.GetBytes(valJSON, "market_odometer.odometer_unit").String()
-			}
-			// TODO: this needs to be implemented in the load_valuations script
-			requestPostalCode := gjson.GetBytes(requestJSON, "postalCode")
-			if requestPostalCode.Exists() {
-				vincarioVal.ZipCode = requestPostalCode.String()
-			}
-			// vincario Trade-In - just using the price below mkt mean
-			vincarioVal.TradeIn = int(gjson.GetBytes(valJSON, "market_price.price_below").Float() * ratio)
-			vincarioVal.TradeInAverage = vincarioVal.TradeIn
-			// vincario Retail - just using the price above mkt mean
-			vincarioVal.Retail = int(gjson.GetBytes(valJSON, "market_price.price_above").Float() * ratio)
-			vincarioVal.RetailAverage = vincarioVal.Retail
-
-			vincarioVal.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Float() * ratio)
-			vincarioVal.Currency = gjson.GetBytes(valJSON, "market_price.price_currency").String()
-
-			// often drivly saves valuations with 0 for value, if this is case do not consider it
-			if vincarioVal.Retail > 0 || vincarioVal.TradeIn > 0 {
-				dVal.ValuationSets = append(dVal.ValuationSets, vincarioVal)
-			} else {
-				das.logger.Warn().Msg("did not find a market value from vincario, or valJSON in unexpected format")
-			}
+	for _, valuation := range valuations {
+		valSet := das.projectValuation(valuation, countryCode)
+		if valSet != nil {
+			dVal.ValuationSets = append(dVal.ValuationSets, *valSet)
 		}
 	}
-
 	sort.Slice(dVal.ValuationSets, func(i, j int) bool {
 		return dVal.ValuationSets[i].Updated > dVal.ValuationSets[j].Updated
 	})
 
-	if take != nil && len(dVal.ValuationSets) > *take {
-		dVal.ValuationSets = dVal.ValuationSets[:*take]
-	}
-
 	return &dVal, nil
+}
+
+func (das *userDeviceAPIService) projectValuation(valuation *models.Valuation, countryCode string) *core.ValuationSet {
+	valSet := core.ValuationSet{
+		Updated: valuation.UpdatedAt.Format(time.RFC3339),
+	}
+	if valuation.DrivlyPricingMetadata.Valid {
+		valSet.Vendor = "drivly"
+		valSet.TradeInSource = "drivly"
+		valSet.RetailSource = "drivly"
+
+		drivlyJSON := valuation.DrivlyPricingMetadata.JSON
+		requestJSON := valuation.RequestMetadata.JSON
+		drivlyMileage := gjson.GetBytes(drivlyJSON, "mileage")
+		if drivlyMileage.Exists() {
+			valSet.Mileage = int(drivlyMileage.Int())
+			valSet.Odometer = int(drivlyMileage.Int())
+			valSet.OdometerUnit = "miles"
+		} else {
+			requestMileage := gjson.GetBytes(requestJSON, "mileage")
+			if requestMileage.Exists() {
+				valSet.Mileage = int(requestMileage.Int())
+			}
+		}
+		requestZipCode := gjson.GetBytes(requestJSON, "zipCode")
+		if requestZipCode.Exists() {
+			valSet.ZipCode = requestZipCode.String()
+		}
+		// Drivly Trade-In
+		valSet.TradeIn = extractDrivlyValuation(drivlyJSON, "trade")
+		valSet.TradeInAverage = valSet.TradeIn
+		// Drivly Retail
+		valSet.Retail = extractDrivlyValuation(drivlyJSON, "retail")
+		valSet.RetailAverage = valSet.Retail
+		valSet.Currency = "USD"
+
+		// set the price to display to users
+		valSet.UserDisplayPrice = (valSet.Retail + valSet.TradeIn) / 2
+	} else if valuation.VincarioMetadata.Valid {
+		ratio := 1.0
+		if strings.EqualFold(countryCode, "TUR") {
+			ratio = 1.5
+		}
+		valSet.Vendor = "vincario"
+		valSet.TradeInSource = "vincario"
+		valSet.RetailSource = "vincario"
+		valSet.Updated = valuation.UpdatedAt.Format(time.RFC3339)
+
+		valJSON := valuation.VincarioMetadata.JSON
+		requestJSON := valuation.RequestMetadata.JSON
+		odometerMarket := gjson.GetBytes(valJSON, "market_odometer.odometer_avg")
+		if odometerMarket.Exists() {
+			valSet.Mileage = int(odometerMarket.Int())
+			valSet.Odometer = int(odometerMarket.Int())
+			valSet.OdometerUnit = gjson.GetBytes(valJSON, "market_odometer.odometer_unit").String()
+		}
+		// TODO: this needs to be implemented in the load_valuations script
+		requestPostalCode := gjson.GetBytes(requestJSON, "postalCode")
+		if requestPostalCode.Exists() {
+			valSet.ZipCode = requestPostalCode.String()
+		}
+		// vincario Trade-In - just using the price below mkt mean
+		valSet.TradeIn = int(gjson.GetBytes(valJSON, "market_price.price_below").Float() * ratio)
+		valSet.TradeInAverage = valSet.TradeIn
+		// vincario Retail - just using the price above mkt mean
+		valSet.Retail = int(gjson.GetBytes(valJSON, "market_price.price_above").Float() * ratio)
+		valSet.RetailAverage = valSet.Retail
+
+		valSet.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Float() * ratio)
+		valSet.Currency = gjson.GetBytes(valJSON, "market_price.price_currency").String()
+	}
+	// make sure valid data
+	if valSet.Retail > 0 || valSet.TradeIn > 0 {
+		if valSet.Vendor == "vincario" {
+			valSet.OdometerMeasurementType = core.Market
+		} else if valSet.Odometer%12000 == 0 {
+			valSet.OdometerMeasurementType = core.Estimated
+		} else {
+			valSet.OdometerMeasurementType = core.Real
+		}
+		return &valSet
+	}
+	das.logger.Warn().Str("vin", valuation.Vin).Msgf("did not find a market value from %s, or valJSON in unexpected format", valSet.Vendor)
+	return nil
 }
 
 func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error) {

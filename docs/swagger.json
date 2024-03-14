@@ -103,6 +103,102 @@
                     }
                 }
             }
+        },
+        "/vehicles/{tokenId}/instant-offer": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "makes a request for an instant offer for a particular user device. Simply returns success if able to create job.\nYou will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "offers"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "tokenId for vehicle to get offers",
+                        "name": "tokenId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/vehicles/{tokenId}/offers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "gets any existing offers for a particular user device. You must call instant-offer endpoint first to pull newer. Returns list.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "offers"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "tokenId for vehicle to get offers",
+                        "name": "tokenId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer"
+                        }
+                    }
+                }
+            }
+        },
+        "/vehicles/{tokenId}/valuations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "gets valuations for a particular user device. Includes only price valuations, not offers. gets list of most recent",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "valuations"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "tokenId for vehicle to get offers",
+                        "name": "tokenId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -129,6 +225,19 @@
                     }
                 }
             }
+        },
+        "github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum": {
+            "type": "string",
+            "enum": [
+                "Real",
+                "Estimated",
+                "Market"
+            ],
+            "x-enum-varnames": [
+                "Real",
+                "Estimated",
+                "Market"
+            ]
         },
         "github_com_DIMO-Network_valuations-api_internal_core_models.Offer": {
             "type": "object",
@@ -199,7 +308,16 @@
                     "type": "integer"
                 },
                 "odometer": {
+                    "description": "Odometer used for calculating values",
                     "type": "integer"
+                },
+                "odometerMeasurementType": {
+                    "description": "whether estimated, real, or from the market (eg. vincario). Market, Estimated, Real",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum"
+                        }
+                    ]
                 },
                 "odometerUnit": {
                     "type": "string"

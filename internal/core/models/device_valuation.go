@@ -30,9 +30,31 @@ type ValuationSet struct {
 	RetailAverage int    `json:"retailAverage,omitempty"`
 	RetailRough   int    `json:"retailRough,omitempty"`
 	OdometerUnit  string `json:"odometerUnit"`
-	Odometer      int    `json:"odometer"`
+	// Odometer used for calculating values
+	Odometer int `json:"odometer"`
+	// whether estimated, real, or from the market (eg. vincario). Market, Estimated, Real
+	OdometerMeasurementType OdometerMeasurementEnum `json:"odometerMeasurementType"`
 	// UserDisplayPrice the top level value to show to users in mobile app
 	UserDisplayPrice int `json:"userDisplayPrice"`
 	// eg. USD or EUR
 	Currency string `json:"currency"`
+}
+
+// OdometerMeasurementEnum is a custom type for representing different types of odometer measurements.
+type OdometerMeasurementEnum string
+
+const (
+	// Real indicates the odometer measurement is actual.
+	Real OdometerMeasurementEnum = "Real"
+
+	// Estimated indicates the odometer measurement is an estimate.
+	Estimated OdometerMeasurementEnum = "Estimated"
+
+	// Market indicates the odometer measurement is based on market trends.
+	Market OdometerMeasurementEnum = "Market"
+)
+
+// String returns the string representation of the OdometerMeasurementEnum.
+func (ome OdometerMeasurementEnum) String() string {
+	return string(ome)
 }
