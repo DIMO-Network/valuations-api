@@ -36,9 +36,9 @@ type UserDeviceAPIService interface {
 	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
 	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
 	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
-	GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int) (*core.DeviceOffer, error)
+	GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error)
 	GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error)
-	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error)
+	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceId string) (*core.DeviceValuation, error)
 	CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error)
 	CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
 	LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error)
@@ -165,26 +165,29 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 	return getUserDeviceOffers(drivlyVinData, nil)
 }
 
-func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int) (*core.DeviceOffer, error) {
+func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error) {
 	// Drivly data
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
 	drivlyVinData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
 		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
 		qm.OrderBy("updated_at desc"),
-		qm.Limit(1)).One(ctx, das.dbs().Reader)
+		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
+	// todo: fallback if nothing found to lookup by userDeviceID
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	return getUserDeviceOffers(drivlyVinData, &take)
+	return getUserDeviceOffers(drivlyVinData)
 }
 
-func getUserDeviceOffers(drivlyVinData *models.Valuation, take *int) (*core.DeviceOffer, error) {
+func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
 	dOffer := core.DeviceOffer{
 		OfferSets: []core.OfferSet{},
 	}
+	// todo handle array
+	// todo set odometer measure type
 
 	if drivlyVinData != nil {
 		drivlyOffers := core.DecodeOfferFromJSON(drivlyVinData.OfferMetadata.JSON)
@@ -211,11 +214,6 @@ func getUserDeviceOffers(drivlyVinData *models.Valuation, take *int) (*core.Devi
 		sort.Slice(dOffer.OfferSets, func(i, j int) bool {
 			return dOffer.OfferSets[i].Updated > dOffer.OfferSets[j].Updated
 		})
-
-		if take != nil && len(dOffer.OfferSets) > *take {
-			dOffer.OfferSets = dOffer.OfferSets[:*take]
-		}
-
 	}
 
 	return &dOffer, nil
@@ -234,14 +232,14 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 	return das.getUserDeviceValuations(valuationData, countryCode)
 }
 
-func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int) (*core.DeviceValuation, error) {
+func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceId string) (*core.DeviceValuation, error) {
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
-
 	valuations, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
+	// todo: fallback if nothing found to lookup by userDeviceID
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
