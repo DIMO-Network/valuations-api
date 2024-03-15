@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"io"
 	"log"
 	"math/big"
@@ -174,9 +175,29 @@ func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Contex
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
-	// todo: fallback if nothing found to lookup by userDeviceID
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// fallback if nothing found to lookup by userDeviceID
+			drivlyVinData, err = models.Valuations(
+				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+				models.ValuationWhere.OfferMetadata.IsNotNull(),
+				qm.OrderBy("updated_at desc"),
+				qm.Limit(take)).All(ctx, das.dbs().Reader)
+			if err != nil {
+				return nil, err
+			} else if len(drivlyVinData) > 0 {
+				// update the found records and set the token id
+				for _, datum := range drivlyVinData {
+					datum.TokenID = tid
+					_, err := datum.Update(ctx, das.dbs().Writer, boil.Infer())
+					if err != nil {
+						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation")
+					}
+				}
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	return getUserDeviceOffers(drivlyVinData)
