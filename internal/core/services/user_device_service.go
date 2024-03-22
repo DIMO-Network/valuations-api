@@ -177,8 +177,8 @@ func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Contex
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err != nil || drivlyVinData == nil {
+		if errors.Is(err, sql.ErrNoRows) || drivlyVinData == nil {
 			// fallback if nothing found to lookup by userDeviceID
 			drivlyVinData, err = models.Valuations(
 				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
@@ -225,8 +225,8 @@ func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Co
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err != nil || valuations == nil {
+		if errors.Is(err, sql.ErrNoRows) || valuations == nil {
 			// fallback if nothing found to lookup by userDeviceID
 			valuations, err = models.Valuations(
 				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
