@@ -1,0 +1,160 @@
+{
+  "vin": "5YJ3E1EB9NF319226",
+  "loan": {
+    "nada": {
+      "base": 28850,
+      "book": 29900
+    },
+    "blackBook": {
+      "baseValue": 27050,
+      "totalValue": 27550,
+      "totalWithHAV": 27550
+    }
+  },
+  "make": "Tesla",
+  "msrp": {
+    "nada": 50990,
+    "blackBook": 50990
+  },
+  "trim": "Long Range",
+  "year": "2022",
+  "model": "Model 3",
+  "trade": {
+    "nada": {
+      "base": 32050,
+      "book": 33100,
+      "avgBook": 31175,
+      "baseAvg": 30125,
+      "baseRough": 27800,
+      "roughBook": 28850
+    },
+    "kelley": {
+      "good": 26603,
+      "baseGood": 27163
+    },
+    "edmunds": {
+      "clean": 27298,
+      "rough": 25790,
+      "average": 26643,
+      "outstanding": 27691
+    },
+    "cargurus": 22187,
+    "blackBook": {
+      "baseAvg": 24085,
+      "totalAvg": 25060,
+      "baseClean": 26560,
+      "baseRough": 19445,
+      "totalClean": 27210,
+      "totalRough": 20745,
+      "totalWithHAVAvg": 24545,
+      "totalWithHAVClean": 26655,
+      "totalWithHAVRough": 20320
+    }
+  },
+  "retail": {
+    "nada": {
+      "base": 35825,
+      "book": 36875
+    },
+    "kelley": {
+      "base": 36199,
+      "book": 35639,
+      "msrp": 57190,
+      "fairPurchasePriceLow": 32764,
+      "baseFairPurchasePrice": 35199,
+      "fairPurchasePriceHigh": 36513,
+      "totalFairPurchasePrice": 34639
+    },
+    "edmunds": {
+      "clean": 34392,
+      "rough": 32146,
+      "average": 33415,
+      "outstanding": 34978
+    },
+    "cargurus": 28731,
+    "blackBook": {
+      "baseAvg": 26575,
+      "totalAvg": 27550,
+      "baseClean": 30900,
+      "baseRough": 23775,
+      "baseXClean": 33100,
+      "totalClean": 31550,
+      "totalRough": 25075,
+      "totalXClean": 33425,
+      "totalWithHAVAvg": 27550,
+      "totalWithHAVClean": 31550,
+      "totalWithHAVRough": 25075,
+      "totalWithHAVXClean": 33425
+    }
+  },
+  "mileage": 24000,
+  "wholesale": {
+    "nada": {
+      "avg": 30578,
+      "low": 27978,
+      "high": 33203,
+      "baseLow": 26700,
+      "baseHigh": 31925,
+      "baseAverage": 29300
+    },
+    "kelley": {
+      "base": 30410,
+      "book": 29850,
+      "fair": 26628,
+      "good": 28011,
+      "baseGood": 28571,
+      "veryGood": 28612,
+      "excellent": 29106
+    },
+    "edmunds": {
+      "clean": 26927,
+      "rough": 25440,
+      "average": 26281,
+      "outstanding": 27315
+    },
+    "manheim": {
+      "nextYear": 7675,
+      "nextMonth": 19100,
+      "aboveValue": 23600,
+      "belowValue": 17100,
+      "averageGrade": 37,
+      "averageValue": 20300,
+      "lastYearPrice": 42400,
+      "lastMonthPrice": 29500,
+      "nextYearRetail": 10800,
+      "last30DaysPrice": 20400,
+      "nextMonthRetail": 22000,
+      "retailAboveValue": 28200,
+      "retailBelowValue": 18050,
+      "lastSixMonthsPrice": 33600,
+      "retailAverageValue": 23200
+    },
+    "blackBook": {
+      "baseAvg": 23275,
+      "totalAvg": 24250,
+      "baseClean": 25975,
+      "baseRough": 20675,
+      "baseXClean": 27925,
+      "totalClean": 26625,
+      "totalRough": 21975,
+      "totalXClean": 28250,
+      "totalWithHAVAvg": 23875,
+      "totalWithHAVClean": 26225,
+      "totalWithHAVRough": 21625,
+      "totalWithHAVXClean": 27825
+    }
+  },
+  "privateparty": {
+    "kelley": {
+      "good": 32797,
+      "baseGood": 33357
+    },
+    "edmunds": {
+      "clean": 30628,
+      "rough": 28782,
+      "average": 29826,
+      "outstanding": 31110
+    },
+    "cargurus": 27205
+  }
+}

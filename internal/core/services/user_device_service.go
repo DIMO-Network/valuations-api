@@ -215,7 +215,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 		return nil, err
 	}
 
-	return das.getUserDeviceValuations(valuationData, countryCode)
+	return getUserDeviceValuations(das.logger, valuationData, countryCode)
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error) {
@@ -249,7 +249,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Co
 		}
 	}
 
-	return das.getUserDeviceValuations(valuations, countryCode)
+	return getUserDeviceValuations(das.logger, valuations, countryCode)
 }
 
 func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
@@ -294,13 +294,13 @@ func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer
 	return &dOffer, nil
 }
 
-func (das *userDeviceAPIService) getUserDeviceValuations(valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
+func getUserDeviceValuations(logger *zerolog.Logger, valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
 	dVal := core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{},
 	}
 
 	for _, valuation := range valuations {
-		valSet := das.projectValuation(valuation, countryCode)
+		valSet := projectValuation(logger, valuation, countryCode)
 		if valSet != nil {
 			dVal.ValuationSets = append(dVal.ValuationSets, *valSet)
 		}
@@ -312,7 +312,7 @@ func (das *userDeviceAPIService) getUserDeviceValuations(valuations models.Valua
 	return &dVal, nil
 }
 
-func (das *userDeviceAPIService) projectValuation(valuation *models.Valuation, countryCode string) *core.ValuationSet {
+func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, countryCode string) *core.ValuationSet {
 	valSet := core.ValuationSet{
 		Updated: valuation.UpdatedAt.Format(time.RFC3339),
 	}
@@ -338,6 +338,7 @@ func (das *userDeviceAPIService) projectValuation(valuation *models.Valuation, c
 		if requestZipCode.Exists() {
 			valSet.ZipCode = requestZipCode.String()
 		}
+		// todo: here is what I need to review
 		// Drivly Trade-In
 		valSet.TradeIn = extractDrivlyValuation(drivlyJSON, "trade")
 		valSet.TradeInAverage = valSet.TradeIn
@@ -392,7 +393,7 @@ func (das *userDeviceAPIService) projectValuation(valuation *models.Valuation, c
 		}
 		return &valSet
 	}
-	das.logger.Warn().Str("vin", valuation.Vin).Msgf("did not find a market value from %s, or valJSON in unexpected format", valSet.Vendor)
+	logger.Warn().Str("vin", valuation.Vin).Msgf("did not find a market value from %s, or valJSON in unexpected format", valSet.Vendor)
 	return nil
 }
 

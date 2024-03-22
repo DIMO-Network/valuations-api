@@ -5,9 +5,11 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/ericlagergren/decimal"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/types"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/DIMO-Network/shared/db"
@@ -40,6 +42,9 @@ var testDrivlyPricingJSON string
 
 //go:embed test_drivly_pricing2.json
 var testDrivlyPricing2JSON string
+
+//go:embed test_drivly_valuation3.json
+var testDrivlyValuations3JSON string
 
 //go:embed test_vincario_valuation.json
 var testVincarioValuationJSON string
@@ -83,6 +88,31 @@ func TestUserDeviceServiceTestSuite(t *testing.T) {
 
 // *** Valuations *** //
 
+func Test_projectValuation_Format3(t *testing.T) {
+	// change to test projectValuation
+	logger := zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("app", "devices-api").
+		Logger()
+
+	ddID := ksuid.New().String()
+	udID := ksuid.New().String()
+	vin := "vinny"
+	// this is the one that in prod would return a valuation that was below what made sense, like if not averaging right
+	valuation := setupCreateValuationsData(t, ddID, udID, vin, map[string][]byte{
+		"DrivlyPricingMetadata": []byte(testDrivlyValuations3JSON),
+	}, nil)
+
+	valuationSet := projectValuation(&logger, valuation, "USA")
+
+	// mileage comes from request metadata, but it is also sometimes returned by payload
+	assert.Equal(t, 24000, valuationSet.Mileage, "mileage must be what is in the mileage json node from drivly, ideally matches request")
+	assert.Equal(t, 26718, valuationSet.TradeIn)
+	assert.Equal(t, 32442, valuationSet.Retail)
+	assert.Equal(t, 29580, valuationSet.UserDisplayPrice)
+	assert.Equal(t, core.Estimated, valuationSet.OdometerMeasurementType)
+}
+
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	// setup
 	ddID := ksuid.New().String()
@@ -91,7 +121,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	// test
 	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
@@ -120,7 +150,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	// tokenId not being set
 	valuations, err := s.svc.GetUserDeviceValuationsByTokenID(s.ctx, tID, "USA", 10, udID)
@@ -153,7 +183,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 	vin := "vinny"
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
 
@@ -172,7 +202,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
 
@@ -199,7 +229,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	deviceOffers, err := s.svc.GetUserDeviceOffers(s.ctx, udID)
 
@@ -241,7 +271,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffersByTokenID_setsTokenI
 	// tokenId not being set
 	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
-	}, s.pdb)
+	}, &s.pdb)
 
 	deviceOffers, err := s.svc.GetUserDeviceOffersByTokenID(s.ctx, tID, 10, udID)
 	require.NoError(s.T(), err)
@@ -278,7 +308,8 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffersByTokenID_setsTokenI
 	assert.Equal(s.T(), offer.UserDeviceID.String, udID)
 }
 
-func setupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md map[string][]byte, pdb db.Store) *models.Valuation {
+// setupCreateValuationsData creates valuation requests with some standards. request mileage: 49957, zip: 48216. if pdb nil just returns
+func setupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md map[string][]byte, pdb *db.Store) *models.Valuation {
 	val := models.Valuation{
 		ID:                 ksuid.New().String(),
 		DeviceDefinitionID: null.StringFrom(ddID),
@@ -298,9 +329,10 @@ func setupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md 
 	if vmd, ok := md["DrivlyPricingMetadata"]; ok {
 		val.DrivlyPricingMetadata = null.JSONFrom(vmd)
 	}
-
-	err := val.Insert(context.Background(), pdb.DBS().Writer, boil.Infer())
-	assert.NoError(t, err)
+	if pdb != nil {
+		err := val.Insert(context.Background(), pdb.DBS().Writer, boil.Infer())
+		assert.NoError(t, err)
+	}
 
 	return &val
 }
