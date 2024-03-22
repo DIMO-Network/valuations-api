@@ -157,13 +157,14 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
 		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
 		qm.OrderBy("updated_at desc"),
-		qm.Limit(1)).One(ctx, das.dbs().Reader)
+		qm.Limit(1)).All(ctx, das.dbs().Reader)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	return getUserDeviceOffers(drivlyVinData, nil)
+	offers, err := getUserDeviceOffers(drivlyVinData)
+	return offers, err
 }
 
 func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error) {
@@ -191,7 +192,7 @@ func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Contex
 					datum.TokenID = tid
 					_, err := datum.Update(ctx, das.dbs().Writer, boil.Infer())
 					if err != nil {
-						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation")
+						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation id: %s", datum.ID)
 					}
 				}
 			}
@@ -201,43 +202,6 @@ func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Contex
 	}
 
 	return getUserDeviceOffers(drivlyVinData)
-}
-
-func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
-	dOffer := core.DeviceOffer{
-		OfferSets: []core.OfferSet{},
-	}
-	// todo handle array
-	// todo set odometer measure type
-
-	if drivlyVinData != nil {
-		drivlyOffers := core.DecodeOfferFromJSON(drivlyVinData.OfferMetadata.JSON)
-
-		requestJSON := drivlyVinData.RequestMetadata.JSON
-		drivlyOffers.Updated = drivlyVinData.UpdatedAt.Format(time.RFC3339)
-		if drivlyVinData.UpdatedAt.Add(time.Hour * 24 * 7).Before(time.Now()) {
-			for i := range drivlyOffers.Offers {
-				drivlyOffers.Offers[i].URL = ""
-			}
-		}
-
-		requestMileage := gjson.GetBytes(requestJSON, "mileage")
-		if requestMileage.Exists() {
-			drivlyOffers.Mileage = int(requestMileage.Int())
-		}
-		requestZipCode := gjson.GetBytes(requestJSON, "zipCode")
-		if requestZipCode.Exists() {
-			drivlyOffers.ZipCode = requestZipCode.String()
-		}
-
-		dOffer.OfferSets = append(dOffer.OfferSets, drivlyOffers)
-
-		sort.Slice(dOffer.OfferSets, func(i, j int) bool {
-			return dOffer.OfferSets[i].Updated > dOffer.OfferSets[j].Updated
-		})
-	}
-
-	return &dOffer, nil
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error) {
@@ -260,12 +224,73 @@ func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Co
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
-	// todo: fallback if nothing found to lookup by userDeviceID
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// fallback if nothing found to lookup by userDeviceID
+			valuations, err = models.Valuations(
+				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceId)),
+				qm.OrderBy("updated_at desc"),
+				qm.Limit(take)).All(ctx, das.dbs().Reader)
+			if err != nil {
+				return nil, err
+			} else if len(valuations) > 0 {
+				// update the found records and set the token id
+				for _, datum := range valuations {
+					datum.TokenID = tid
+					_, err := datum.Update(ctx, das.dbs().Writer, boil.Infer())
+					if err != nil {
+						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation id: %s", datum.ID)
+					}
+				}
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	return das.getUserDeviceValuations(valuations, countryCode)
+}
+
+func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
+	dOffer := core.DeviceOffer{
+		OfferSets: []core.OfferSet{},
+	}
+	for _, offer := range drivlyVinData {
+		// func to project the data, if not nil add to dOffer.OfferSets
+		offerSet := core.DecodeOfferFromJSON(offer.OfferMetadata.JSON)
+
+		requestJSON := offer.RequestMetadata.JSON
+		offerSet.Updated = offer.UpdatedAt.Format(time.RFC3339)
+		// remove offer url if it has expired (7 days)
+		if offer.UpdatedAt.Add(time.Hour * 24 * 7).Before(time.Now()) {
+			for i := range offerSet.Offers {
+				offerSet.Offers[i].URL = ""
+			}
+		}
+
+		requestMileage := gjson.GetBytes(requestJSON, "mileage")
+		if requestMileage.Exists() {
+			offerSet.Mileage = int(requestMileage.Int())
+		}
+		requestZipCode := gjson.GetBytes(requestJSON, "zipCode")
+		if requestZipCode.Exists() {
+			offerSet.ZipCode = requestZipCode.String()
+		}
+		// set odometer measure type
+		if offerSet.Mileage%12000 == 0 {
+			offerSet.OdometerMeasurementType = core.Estimated
+		} else {
+			offerSet.OdometerMeasurementType = core.Real
+		}
+
+		dOffer.OfferSets = append(dOffer.OfferSets, offerSet)
+	}
+
+	sort.Slice(dOffer.OfferSets, func(i, j int) bool {
+		return dOffer.OfferSets[i].Updated > dOffer.OfferSets[j].Updated
+	})
+
+	return &dOffer, nil
 }
 
 func (das *userDeviceAPIService) getUserDeviceValuations(valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
@@ -355,7 +380,7 @@ func (das *userDeviceAPIService) projectValuation(valuation *models.Valuation, c
 		valSet.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Float() * ratio)
 		valSet.Currency = gjson.GetBytes(valJSON, "market_price.price_currency").String()
 	}
-	// make sure valid data
+	// make sure valid data & set odo type
 	if valSet.Retail > 0 || valSet.TradeIn > 0 {
 		if valSet.Vendor == "vincario" {
 			valSet.OdometerMeasurementType = core.Market
