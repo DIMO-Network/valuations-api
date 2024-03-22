@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 	"io"
 	"log"
 	"math/big"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
@@ -39,7 +40,7 @@ type UserDeviceAPIService interface {
 	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
 	GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error)
 	GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error)
-	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceId string) (*core.DeviceValuation, error)
+	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error)
 	CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error)
 	CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
 	LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error)
@@ -217,7 +218,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 	return das.getUserDeviceValuations(valuationData, countryCode)
 }
 
-func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceId string) (*core.DeviceValuation, error) {
+func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error) {
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
 	valuations, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
@@ -228,7 +229,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Co
 		if errors.Is(err, sql.ErrNoRows) {
 			// fallback if nothing found to lookup by userDeviceID
 			valuations, err = models.Valuations(
-				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceId)),
+				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
 				qm.OrderBy("updated_at desc"),
 				qm.Limit(take)).All(ctx, das.dbs().Reader)
 			if err != nil {

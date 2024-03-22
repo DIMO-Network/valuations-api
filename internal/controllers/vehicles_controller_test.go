@@ -85,7 +85,7 @@ func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly1() {
 		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10).Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10, udID).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -131,7 +131,7 @@ func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10).Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10, udID).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -176,7 +176,7 @@ func (s *VehiclesControllerTestSuite) TestGetDeviceOffers() {
 		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceOffersByTokenID(gomock.Any(), gomock.Any(), 10).Return(&core.DeviceOffer{
+	s.userDeviceSvc.EXPECT().GetUserDeviceOffersByTokenID(gomock.Any(), gomock.Any(), 10, udID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{
 			{
 				Source:  "drivly",
