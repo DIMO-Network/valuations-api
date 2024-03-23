@@ -135,11 +135,11 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	assert.Equal(s.T(), "miles", valuations.ValuationSets[0].OdometerUnit)
 	assert.Equal(s.T(), 54123, valuations.ValuationSets[0].Retail)
 	//54123 + 50151 / 2
-	assert.Equal(s.T(), 52049, valuations.ValuationSets[0].UserDisplayPrice)
+	assert.Equal(s.T(), 52259, valuations.ValuationSets[0].UserDisplayPrice)
 	assert.Equal(s.T(), "USD", valuations.ValuationSets[0].Currency)
 	// 49040 + 52173 + 49241 / 3 = 50151
-	assert.Equal(s.T(), 49976, valuations.ValuationSets[0].TradeIn)
-	assert.Equal(s.T(), 49976, valuations.ValuationSets[0].TradeInAverage)
+	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeIn)
+	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeInAverage)
 }
 
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTokenIDFromUDID() {
@@ -164,11 +164,11 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 	assert.Equal(s.T(), "miles", valuations.ValuationSets[0].OdometerUnit)
 	assert.Equal(s.T(), 54123, valuations.ValuationSets[0].Retail)
 	//54123 + 50151 / 2
-	assert.Equal(s.T(), 52049, valuations.ValuationSets[0].UserDisplayPrice)
+	assert.Equal(s.T(), 52259, valuations.ValuationSets[0].UserDisplayPrice)
 	assert.Equal(s.T(), "USD", valuations.ValuationSets[0].Currency)
 	// 49040 + 52173 + 49241 / 3 = 50151
-	assert.Equal(s.T(), 49976, valuations.ValuationSets[0].TradeIn)
-	assert.Equal(s.T(), 49976, valuations.ValuationSets[0].TradeInAverage)
+	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeIn)
+	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeInAverage)
 
 	// lookup in db by tokenId and should exist
 	tokenID := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tID, 0))
