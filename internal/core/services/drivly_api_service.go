@@ -86,6 +86,12 @@ func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *ValuationRequestD
 	if err != nil {
 		return nil, err
 	}
+	// check response for having at least trade and retail objects
+	_, tok := res["trade"]
+	_, rok := res["retail"]
+	if !tok && !rok {
+		return nil, fmt.Errorf("no valid drivly pricing found for vin: %s", vin)
+	}
 
 	return res, nil
 }

@@ -361,7 +361,6 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 		valSet.Vendor = "vincario"
 		valSet.TradeInSource = "vincario"
 		valSet.RetailSource = "vincario"
-		valSet.Updated = valuation.UpdatedAt.Format(time.RFC3339)
 
 		valJSON := valuation.VincarioMetadata.JSON
 		requestJSON := valuation.RequestMetadata.JSON
@@ -397,7 +396,7 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 		}
 		return &valSet
 	}
-	logger.Warn().Str("vin", valuation.Vin).Msgf("did not find a market value from %s, or valJSON in unexpected format", valSet.Vendor)
+	logger.Debug().Str("vin", valuation.Vin).Msgf("did not find a market value from %s, or valJSON in unexpected format", valSet.Vendor)
 	return nil
 }
 
