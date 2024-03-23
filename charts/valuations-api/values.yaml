@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/valuations-api
   pullPolicy: IfNotPresent
-  tag: 9b9131a
+  tag: a04960b
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -50,7 +50,6 @@ env:
   DRIVLY_OFFER_API_URL: https://offers.dev.driv.ly
   TOKEN_EXCHANGE_JWT_KEY_SET_URL: http://dex-roles-rights.dev.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
-
 service:
   type: ClusterIP
   ports:
