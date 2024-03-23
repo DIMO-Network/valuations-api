@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"go.uber.org/mock/gomock"
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
@@ -15,15 +17,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
-
-type ValuationsControllerTestSuite struct {
+type VehiclesControllerTestSuite struct {
 	suite.Suite
-	controller    *ValuationsController
+	controller    *VehiclesController
 	ctx           context.Context
 	mockCtrl      *gomock.Controller
 	app           *fiber.App
@@ -31,7 +30,7 @@ type ValuationsControllerTestSuite struct {
 }
 
 // SetupSuite starts container db
-func (s *ValuationsControllerTestSuite) SetupSuite() {
+func (s *VehiclesControllerTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 	logger := dbtest.Logger()
 	mockCtrl := gomock.NewController(s.T())
@@ -45,39 +44,40 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	}
 
 	//TODO: check for drivly service api mock
-	controller := NewValuationsController(logger, s.userDeviceSvc, nil)
+	controller := NewVehiclesController(logger, s.userDeviceSvc, nil)
 	app := dbtest.SetupAppFiber(*logger)
-	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
-	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
+	app.Get("/vehicles/:tokenID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
+	app.Get("/vehicles/:tokenID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
 	s.controller = controller
 
 	s.app = app
 }
 
-func (s *ValuationsControllerTestSuite) SetupTest() {
+func (s *VehiclesControllerTestSuite) SetupTest() {
 
 }
 
 // TearDownTest after each test truncate tables
-func (s *ValuationsControllerTestSuite) TearDownTest() {
+func (s *VehiclesControllerTestSuite) TearDownTest() {
 }
 
 // TearDownSuite cleanup at end by terminating container
-func (s *ValuationsControllerTestSuite) TearDownSuite() {
+func (s *VehiclesControllerTestSuite) TearDownSuite() {
 	s.mockCtrl.Finish() // might need to do mockctrl on every test, and refactor setup into one method
 }
 
 // Test Runner
-func TestValuationsControllerTestSuite(t *testing.T) {
-	suite.Run(t, new(ValuationsControllerTestSuite))
+func TestVehiclesControllerTestSuite(t *testing.T) {
+	suite.Run(t, new(VehiclesControllerTestSuite))
 }
 
-func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly1() {
+func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly1() {
 	// arrange db, insert some user_devices
+	tokenID := "1234567890"
 	udID := ksuid.New().String()
 	vin := "vinny"
 
-	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+	s.userDeviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Return(&grpc.UserDevice{
 		Id:           udID,
 		UserId:       userID,
 		VinConfirmed: true,
@@ -85,7 +85,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly1() {
 		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10, udID).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -110,19 +110,20 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly1() {
 		},
 	}, nil)
 
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
+	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%s/valuations", tokenID), "")
 	response, _ := s.app.Test(request)
 
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
-func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly2() {
+func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 	// this is the other format we're seeing coming from drivly for pricing
 	// arrange db, insert some user_devices
+	tokenID := "1234567890"
 	udID := ksuid.New().String()
 	vin := "vinny"
 
-	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+	s.userDeviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Return(&grpc.UserDevice{
 		Id:           udID,
 		UserId:       userID,
 		VinConfirmed: true,
@@ -130,7 +131,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "USA").Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10, udID).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -155,62 +156,27 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 		},
 	}, nil)
 
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
+	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%s/valuations", tokenID), "")
 	response, _ := s.app.Test(request)
 
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
-func (s *ValuationsControllerTestSuite) TestGetDeviceValuations_Vincario() {
-	// this is the other format we're seeing coming from drivly for pricing
-	// arrange db, insert some user_devices
+func (s *VehiclesControllerTestSuite) TestGetDeviceOffers() {
+
+	tokenID := "1234567890"
 	udID := ksuid.New().String()
 	vin := "vinny"
 
-	s.userDeviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&grpc.UserDevice{
+	s.userDeviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Return(&grpc.UserDevice{
 		Id:           udID,
 		UserId:       userID,
 		VinConfirmed: true,
 		Vin:          &vin,
-		CountryCode:  "DEU",
+		CountryCode:  "USA",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), udID, "DEU").Return(&core.DeviceValuation{
-		ValuationSets: []core.ValuationSet{
-			{
-				Vendor:           "vincario",
-				Updated:          "",
-				Mileage:          30137,
-				ZipCode:          "",
-				TradeInSource:    "",
-				TradeIn:          44800,
-				TradeInClean:     0,
-				TradeInAverage:   0,
-				TradeInRough:     0,
-				RetailSource:     "",
-				Retail:           55200,
-				RetailClean:      0,
-				RetailAverage:    0,
-				RetailRough:      0,
-				OdometerUnit:     "km",
-				Odometer:         30137,
-				UserDisplayPrice: 51440,
-				Currency:         "EUR",
-			},
-		},
-	}, nil)
-
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/valuations", udID), "")
-	response, err := s.app.Test(request, 2000)
-	require.NoError(s.T(), err)
-
-	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
-}
-
-func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
-	udID := ksuid.New().String()
-
-	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), udID).Return(&core.DeviceOffer{
+	s.userDeviceSvc.EXPECT().GetUserDeviceOffersByTokenID(gomock.Any(), gomock.Any(), 10, udID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{
 			{
 				Source:  "drivly",
@@ -222,7 +188,7 @@ func (s *ValuationsControllerTestSuite) TestGetDeviceOffers() {
 		},
 	}, nil)
 
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/user/devices/%s/offers", udID), "")
+	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%s/offers", tokenID), "")
 	response, err := s.app.Test(request)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), fiber.StatusOK, response.StatusCode)

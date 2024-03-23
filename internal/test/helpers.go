@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 
@@ -252,6 +254,13 @@ type UsersClient struct {
 
 func (c *UsersClient) GetUser(_ context.Context, in *pb.GetUserRequest, _ ...grpc.CallOption) (*pb.User, error) {
 	u, ok := c.Store[in.Id]
+	if !ok {
+		return nil, status.Error(codes.NotFound, "No user with that id found.")
+	}
+	return u, nil
+}
+func (c *UsersClient) GetUserByEthAddr(_ context.Context, in *pb.GetUserByEthRequest, _ ...grpc.CallOption) (*pb.User, error) {
+	u, ok := c.Store[common.BytesToAddress(in.EthAddr).Hex()]
 	if !ok {
 		return nil, status.Error(codes.NotFound, "No user with that id found.")
 	}

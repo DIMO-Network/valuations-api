@@ -40,16 +40,31 @@ func (m *MockUserDeviceDataAPIService) EXPECT() *MockUserDeviceDataAPIServiceMoc
 }
 
 // GetUserDeviceData mocks base method.
-func (m *MockUserDeviceDataAPIService) GetUserDeviceData(ctx context.Context, id, ddID string) (*grpc.UserDeviceDataResponse, error) {
+func (m *MockUserDeviceDataAPIService) GetUserDeviceData(ctx context.Context, userDeviceID, ddID string) (*grpc.UserDeviceDataResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceData", ctx, id, ddID)
+	ret := m.ctrl.Call(m, "GetUserDeviceData", ctx, userDeviceID, ddID)
 	ret0, _ := ret[0].(*grpc.UserDeviceDataResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserDeviceData indicates an expected call of GetUserDeviceData.
-func (mr *MockUserDeviceDataAPIServiceMockRecorder) GetUserDeviceData(ctx, id, ddID any) *gomock.Call {
+func (mr *MockUserDeviceDataAPIServiceMockRecorder) GetUserDeviceData(ctx, userDeviceID, ddID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceData", reflect.TypeOf((*MockUserDeviceDataAPIService)(nil).GetUserDeviceData), ctx, id, ddID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceData", reflect.TypeOf((*MockUserDeviceDataAPIService)(nil).GetUserDeviceData), ctx, userDeviceID, ddID)
+}
+
+// GetVehicleRawData mocks base method.
+func (m *MockUserDeviceDataAPIService) GetVehicleRawData(ctx context.Context, userDeviceID string) (*grpc.RawDeviceDataResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVehicleRawData", ctx, userDeviceID)
+	ret0, _ := ret[0].(*grpc.RawDeviceDataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVehicleRawData indicates an expected call of GetVehicleRawData.
+func (mr *MockUserDeviceDataAPIServiceMockRecorder) GetVehicleRawData(ctx, userDeviceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVehicleRawData", reflect.TypeOf((*MockUserDeviceDataAPIService)(nil).GetVehicleRawData), ctx, userDeviceID)
 }

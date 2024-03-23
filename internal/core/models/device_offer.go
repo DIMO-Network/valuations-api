@@ -18,6 +18,8 @@ type OfferSet struct {
 	Updated string `json:"updated,omitempty"`
 	// The mileage used for the offers
 	Mileage int `json:"mileage,omitempty"`
+	// Whether estimated, real, or from the market (eg. vincario). Market, Estimated, Real
+	OdometerMeasurementType OdometerMeasurementEnum `json:"odometerMeasurementType"`
 	// This will be the zip code used (if any) for the offers request regardless if the source uses it
 	ZipCode string `json:"zipCode,omitempty"`
 	// Contains a list of offers from the source
