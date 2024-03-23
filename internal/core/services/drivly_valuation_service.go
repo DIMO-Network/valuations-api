@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ericlagergren/decimal"
+	"github.com/volatiletech/sqlboiler/v4/types"
 
 	"github.com/tidwall/gjson"
 
@@ -69,6 +71,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
+	if userDevice.TokenId == nil {
+		return core.ErrorDataPullStatus, fmt.Errorf("valuation pull requires vehicle to have a TokenID. userDeviceID: %s", userDeviceID)
+	}
 
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
@@ -88,6 +93,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		DeviceDefinitionID: null.StringFrom(deviceDef.DeviceDefinitionId),
 		Vin:                vin,
 		UserDeviceID:       null.StringFrom(userDeviceID),
+		TokenID:            types.NewNullDecimal(decimal.New(int64(*userDevice.TokenId), 0)),
 	}
 
 	// get mileage for the drivly request
@@ -181,6 +187,9 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	if userDevice.Vin == nil || !userDevice.VinConfirmed {
 		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
 	}
+	if userDevice.TokenId == nil {
+		return core.ErrorDataPullStatus, fmt.Errorf("instant offer requires vehicle to have a TokenID. userDeviceID: %s", userDeviceID)
+	}
 	localLog := d.log.With().Str("vin", *userDevice.Vin).Str("device_definition_id", userDevice.DeviceDefinitionId).Str("user_device_id", userDeviceID).Logger()
 
 	existingOfferData, _ := models.Valuations(
@@ -231,6 +240,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		Vin:                *userDevice.Vin,
 		UserDeviceID:       null.StringFrom(userDeviceID),
 		RequestMetadata:    null.JSON{},
+		TokenID:            types.NewNullDecimal(decimal.New(int64(*userDevice.TokenId), 0)),
 	}
 	_ = newOffer.OfferMetadata.Marshal(offer)
 

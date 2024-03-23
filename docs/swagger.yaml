@@ -52,6 +52,11 @@ definitions:
       mileage:
         description: The mileage used for the offers
         type: integer
+      odometerMeasurementType:
+        allOf:
+        - $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum'
+        description: Whether estimated, real, or from the market (eg. vincario). Market,
+          Estimated, Real
       offers:
         description: Contains a list of offers from the source
         items:

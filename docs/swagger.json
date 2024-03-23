@@ -275,6 +275,14 @@
                     "description": "The mileage used for the offers",
                     "type": "integer"
                 },
+                "odometerMeasurementType": {
+                    "description": "Whether estimated, real, or from the market (eg. vincario). Market, Estimated, Real",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.OdometerMeasurementEnum"
+                        }
+                    ]
+                },
                 "offers": {
                     "description": "Contains a list of offers from the source",
                     "type": "array",
