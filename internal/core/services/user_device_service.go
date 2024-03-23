@@ -505,38 +505,41 @@ func lastRequestDidGiveError(existingOfferData *models.Valuation) (bool, error) 
 
 // extractDrivlyValuation pulls out the price from the drivly json, based on the passed in key, eg. trade or retail. calculates average if no root property found
 func extractDrivlyValuation(drivlyJSON []byte, key string) int {
+	// handle when value is just set at top level
 	if gjson.GetBytes(drivlyJSON, key).Exists() && !gjson.GetBytes(drivlyJSON, key).IsObject() {
 		v := gjson.GetBytes(drivlyJSON, key).String()
 		vf, _ := strconv.ParseFloat(v, 64)
 		return int(vf)
 	}
-	// get all values
-	pricings := map[string]int{}
+	// if no specific value, make an average of all values drivly offers
+	pricings := map[string]int64{}
 	if gjson.GetBytes(drivlyJSON, key+".blackBook.totalAvg").Exists() {
-		values := gjson.GetManyBytes(drivlyJSON, key+".blackBook.totalRough", key+".blackBook.totalAvg", key+".blackBook.totalClean")
-		pricings["blackbook"] = int(values[1].Int())
+		pricings["blackbook"] = gjson.GetBytes(drivlyJSON, key+".blackBook.totalAvg").Int()
 	}
 	if gjson.GetBytes(drivlyJSON, key+".kelley.good").Exists() {
-		pricings["kbb"] = int(gjson.GetBytes(drivlyJSON, key+".kelley.good").Int())
+		pricings["kbb"] = gjson.GetBytes(drivlyJSON, key+".kelley.good").Int()
+	} else if gjson.GetBytes(drivlyJSON, key+".kelley.book").Exists() {
+		pricings["kbb"] = gjson.GetBytes(drivlyJSON, key+".kelley.book").Int()
 	}
 	if gjson.GetBytes(drivlyJSON, key+".edmunds.average").Exists() {
-		values := gjson.GetManyBytes(drivlyJSON, key+".edmunds.rough", key+".edmunds.average", key+".edmunds.clean")
-		pricings["edmunds"] = int(values[1].Int())
+		pricings["edmunds"] = gjson.GetBytes(drivlyJSON, key+".edmunds.average").Int()
 	}
 	if gjson.GetBytes(drivlyJSON, key+".nada.book").Exists() {
-		values := gjson.GetManyBytes(drivlyJSON, key+".nada.base", key+".nada.avgBook", key+".nada.book")
-		pricings["nada"] = int(values[1].Int())
+		pricings["nada"] = gjson.GetBytes(drivlyJSON, key+".nada.book").Int()
 	}
 	if gjson.GetBytes(drivlyJSON, key+".cargurus").Exists() {
-		values := gjson.GetManyBytes(drivlyJSON, key+".cargurus")
-		pricings["cargurus"] = int(values[0].Int())
+		pricings["cargurus"] = gjson.GetBytes(drivlyJSON, key+".cargurus").Int()
 	}
-	if len(pricings) > 1 {
-		sum := 0
+	if len(pricings) > 0 {
+		sum := int64(0)
+		denominator := int64(0)
 		for _, v := range pricings {
-			sum += v
+			if v > 100 {
+				sum += v
+				denominator++
+			}
 		}
-		return sum / len(pricings)
+		return int(sum / denominator)
 	}
 
 	return 0

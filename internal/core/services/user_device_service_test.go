@@ -88,7 +88,7 @@ func TestUserDeviceServiceTestSuite(t *testing.T) {
 
 // *** Valuations *** //
 
-func Test_projectValuation_Format3(t *testing.T) {
+func Test_projectValuation(t *testing.T) {
 	// change to test projectValuation
 	logger := zerolog.New(os.Stdout).With().
 		Timestamp().
