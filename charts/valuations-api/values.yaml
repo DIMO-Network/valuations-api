@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/valuations-api
   pullPolicy: IfNotPresent
-  tag: ee6c432
+  tag: dcde72b
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
