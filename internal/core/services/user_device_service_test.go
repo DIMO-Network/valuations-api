@@ -4,13 +4,14 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/ericlagergren/decimal"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/types"
-	"math/big"
-	"os"
-	"testing"
 
 	"github.com/DIMO-Network/shared/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"

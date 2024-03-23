@@ -91,29 +91,29 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	// get mileage for the drivly request
-	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
+	userDeviceData, err := d.uddSvc.GetVehicleRawData(ctx, userDeviceID)
 	if err != nil {
 		// just warn if can't get data
 		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
-	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
-	if err != nil {
-		return core.ErrorDataPullStatus, err
+	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	if deviceMileage == 0 {
+		localLog.Warn().Msg("vehicle mileage found was 0 for valuation pull request")
 	}
 
 	reqData := ValuationRequestData{
-		Mileage: deviceMileage,
+		Mileage: &deviceMileage,
 	}
 
-	if userDevice.PostalCode == "" && userDeviceData != nil {
+	if userDevice.PostalCode == "" && userDeviceData != nil && len(userDeviceData.Items) > 0 {
 		// need to geodecode the postal code
-		lat := userDeviceData.Latitude
-		long := userDeviceData.Longitude
-		localLog.Info().Msgf("lat long found: %f, %f", safePtrFloat(lat), safePtrFloat(long))
-		if lat != nil && long != nil {
-			gl, err := d.geoSvc.GeoDecodeLatLong(safePtrFloat(lat), safePtrFloat(long))
+		lat := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "latitude.value").Float()
+		long := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "longitude.value").Float()
+		localLog.Info().Msgf("lat long found: %f, %f", lat, long)
+		if lat > 0 && long > 0 {
+			gl, err := d.geoSvc.GeoDecodeLatLong(lat, long)
 			if err != nil {
-				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", safePtrFloat(lat), safePtrFloat(long))
+				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", lat, long)
 			}
 			if gl != nil {
 				userDevice.PostalCode = gl.PostalCode
@@ -181,6 +181,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	if userDevice.Vin == nil || !userDevice.VinConfirmed {
 		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
 	}
+	localLog := d.log.With().Str("vin", *userDevice.Vin).Str("device_definition_id", userDevice.DeviceDefinitionId).Str("user_device_id", userDeviceID).Logger()
 
 	existingOfferData, _ := models.Valuations(
 		models.ValuationWhere.Vin.EQ(*userDevice.Vin),
@@ -200,27 +201,26 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	}
 
 	// get mileage for the drivly request
-	userDeviceData, err := d.uddSvc.GetUserDeviceData(ctx, userDeviceID, userDevice.DeviceDefinitionId)
+	userDeviceData, err := d.uddSvc.GetVehicleRawData(ctx, userDeviceID)
 	if err != nil {
 		// just warn if can't get data
-		d.log.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
+		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
-	deviceMileage, err := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
 
-	if err != nil {
-		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling mileage data")
-		return core.ErrorDataPullStatus, err
+	if deviceMileage == 0 {
+		localLog.Warn().Msg("vehicle mileage found was 0")
 	}
 
 	params := ValuationRequestData{
-		Mileage: deviceMileage,
+		Mileage: &deviceMileage,
 		ZipCode: &userDevice.PostalCode,
 	}
 
 	offer, err := d.drivlySvc.GetOffersByVIN(*userDevice.Vin, &params)
 
 	if err != nil {
-		d.log.Err(err).Str("VIN", *userDevice.Vin).Str("UserDeviceID", userDeviceID).Msg("error pulling drivly offer data")
+		localLog.Err(err).Msg("error pulling drivly offer data")
 		return core.ErrorDataPullStatus, err
 	}
 
@@ -242,39 +242,39 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	return core.PulledValuationDrivlyStatus, nil
 }
 
-func safePtrFloat(f *float64) float64 {
-	if f == nil {
-		return 0
-	}
-	return *f
-}
-
 const EstMilesPerYear = 12000.0
 
-func getDeviceMileage(userDeviceData *pb.UserDeviceDataResponse, modelYear int, currentYear int) (mileage *float64, err error) {
-	var deviceMileage *float64
+func getDeviceMileage(userDeviceData *pb.RawDeviceDataResponse, modelYear int, currentYear int) (mileage float64) {
 
-	if userDeviceData != nil && userDeviceData.Odometer != nil && *userDeviceData.Odometer > 0 {
-		deviceMileage = userDeviceData.Odometer
-	}
-
-	if userDeviceData == nil || userDeviceData.Odometer == nil {
-		deviceMileage = new(float64)
-		yearDiff := currentYear - modelYear
-		switch {
-		case yearDiff > 0:
-			// Past model year
-			*deviceMileage = float64(yearDiff) * EstMilesPerYear
-		case yearDiff == 0:
-			// Current model year
-			*deviceMileage = EstMilesPerYear / 2
-		default:
-			// Next model year
-			*deviceMileage = 0
+	if userDeviceData != nil {
+		// get the highest odometer found
+		odoKm := float64(0)
+		for _, item := range userDeviceData.Items {
+			odo := gjson.GetBytes(item.SignalsJsonData, "odometer.value").Float()
+			if odo > odoKm {
+				odoKm = odo
+			}
+		}
+		if odoKm > 0 {
+			return odoKm * 0.621271
 		}
 	}
+	// if get here means need to just estimate
+	deviceMileage := float64(0)
+	yearDiff := currentYear - modelYear
+	switch {
+	case yearDiff > 0:
+		// Past model year
+		deviceMileage = float64(yearDiff) * EstMilesPerYear
+	case yearDiff == 0:
+		// Current model year
+		deviceMileage = EstMilesPerYear / 2
+	default:
+		// Next model year
+		deviceMileage = 0
+	}
 
-	return deviceMileage, nil
+	return deviceMileage
 }
 
 func (d *drivlyValuationService) setUserDeviceStyleFromEdmunds(ctx context.Context, edmunds map[string]interface{}, ud *pbdeviceapi.UserDevice) {
