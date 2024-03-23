@@ -208,6 +208,7 @@ func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Contex
 func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error) {
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+		qm.Where("drivly_pricing_metadata is not null or vincario_metadata is not null"),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).All(ctx, das.dbs().Reader)
 
@@ -215,13 +216,14 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 		return nil, err
 	}
 
-	return getUserDeviceValuations(das.logger, valuationData, countryCode)
+	return buildValuationsFromSlice(das.logger, valuationData, countryCode)
 }
 
 func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error) {
 	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
 	valuations, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tid),
+		qm.Where("drivly_pricing_metadata is not null or vincario_metadata is not null"),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(take)).All(ctx, das.dbs().Reader)
 
@@ -249,7 +251,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Co
 		}
 	}
 
-	return getUserDeviceValuations(das.logger, valuations, countryCode)
+	return buildValuationsFromSlice(das.logger, valuations, countryCode)
 }
 
 func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
@@ -294,7 +296,7 @@ func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer
 	return &dOffer, nil
 }
 
-func getUserDeviceValuations(logger *zerolog.Logger, valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
+func buildValuationsFromSlice(logger *zerolog.Logger, valuations models.ValuationSlice, countryCode string) (*core.DeviceValuation, error) {
 	dVal := core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{},
 	}
@@ -313,6 +315,9 @@ func getUserDeviceValuations(logger *zerolog.Logger, valuations models.Valuation
 }
 
 func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, countryCode string) *core.ValuationSet {
+	if !valuation.DrivlyPricingMetadata.Valid && !valuation.VincarioMetadata.Valid {
+		return nil
+	}
 	valSet := core.ValuationSet{
 		Updated: valuation.UpdatedAt.Format(time.RFC3339),
 	}
@@ -338,7 +343,6 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 		if requestZipCode.Exists() {
 			valSet.ZipCode = requestZipCode.String()
 		}
-		// todo: here is what I need to review
 		// Drivly Trade-In
 		valSet.TradeIn = extractDrivlyValuation(drivlyJSON, "trade")
 		valSet.TradeInAverage = valSet.TradeIn

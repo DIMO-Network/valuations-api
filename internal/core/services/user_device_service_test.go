@@ -113,6 +113,26 @@ func Test_projectValuation(t *testing.T) {
 	assert.Equal(t, 29580, valuationSet.UserDisplayPrice)
 	assert.Equal(t, core.Estimated, valuationSet.OdometerMeasurementType)
 }
+func Test_projectValuation_empty(t *testing.T) {
+	logger := zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("app", "devices-api").
+		Logger()
+
+	ddID := ksuid.New().String()
+	udID := ksuid.New().String()
+	vin := "vinny"
+
+	v := models.Valuation{
+		ID:                 ksuid.New().String(),
+		DeviceDefinitionID: null.StringFrom(ddID),
+		Vin:                vin,
+		UserDeviceID:       null.StringFrom(udID),
+		OfferMetadata:      null.JSONFrom([]byte(`{}`)),
+	}
+	val := projectValuation(&logger, &v, "USA")
+	assert.Nil(t, val, "if no valuations should return nil")
+}
 
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	// setup
