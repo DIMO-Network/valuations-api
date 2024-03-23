@@ -185,8 +185,11 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		return core.ErrorDataPullStatus, err
 	}
 
-	if userDevice.Vin == nil || !userDevice.VinConfirmed {
-		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires a confirmed VIN")
+	if userDevice.Vin == nil {
+		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires vehicle to have a VIN")
+	}
+	if len(*userDevice.Vin) != 17 {
+		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", *userDevice.Vin)
 	}
 	if userDevice.TokenId == nil {
 		return core.ErrorDataPullStatus, fmt.Errorf("instant offer requires vehicle to have a TokenID. userDeviceID: %s", userDeviceID)
