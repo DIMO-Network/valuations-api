@@ -28,7 +28,7 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 
 		if err != nil {
 			if errors.Is(err, nats.ErrTimeout) {
-				h.logger.Info().Msg("no messages found at offer sync")
+				h.logger.Debug().Msg("no messages found at offer sync")
 				continue
 			}
 
