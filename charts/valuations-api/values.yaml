@@ -51,6 +51,7 @@ env:
   TOKEN_EXCHANGE_JWT_KEY_SET_URL: http://dex-roles-rights.dev.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
   EVENTS_TOPIC: topic.event
+  KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
 service:
   type: ClusterIP
   ports:

@@ -37,7 +37,8 @@ type Settings struct {
 	TokenExchangeJWTKeySetURL    string `yaml:"TOKEN_EXCHANGE_JWT_KEY_SET_URL"`
 
 	// EventsTopic kafka topic to get onchain events emmitted by devices-api
-	EventsTopic string `yaml:"EVENTS_TOPIC"`
+	EventsTopic  string `yaml:"EVENTS_TOPIC"`
+	KafkaBrokers string `yaml:"KAFKA_BROKERS"`
 }
 
 func (s *Settings) IsProduction() bool {

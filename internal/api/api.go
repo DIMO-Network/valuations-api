@@ -2,9 +2,14 @@ package api
 
 import (
 	"context"
+	"github.com/DIMO-Network/shared"
+	"github.com/IBM/sarama"
+	"github.com/burdiyan/kafkautil"
+	"github.com/lovoo/goka"
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
@@ -72,6 +77,35 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
 	_ = ctx.Done()
+}
+
+// startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
+func startEventsConsumer(settings *config.Settings, logger zerolog.Logger) {
+	//goka setup
+	sc := goka.DefaultConfig()
+	sc.Version = sarama.V2_8_1_0
+	goka.ReplaceGlobalConfig(sc)
+	// todo: need event from devices-api for the mint, and a consumer with the logic just like NewRunValuationCommandHandler
+	group := goka.DefineGroup("valuation-trigger-consumer",
+		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[services.DeviceStatusEvent]), ingestSvc.ProcessDeviceStatusMessages),
+	)
+
+	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
+		group,
+		goka.WithHasher(kafkautil.MurmurHasher),
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Could not start valuations trigger processor")
+	}
+
+	go func() {
+		err = processor.Run(context.Background())
+		if err != nil {
+			logger.Fatal().Err(err).Msg("could not run device status processor")
+		}
+	}()
+
+	logger.Info().Msg("valuations trigger from vehicle mint consumer started")
 }
 
 // startMonitoringServer start server for monitoring endpoints. Could likely be moved to shared lib.
