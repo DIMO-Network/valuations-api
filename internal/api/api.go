@@ -46,7 +46,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	usersClient grpc2.UserServiceClient) {
 
 	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
-
+	// todo thought: replace this with kafka consumer topic: e.Settings.EventsTopic (EVENTS_TOPIC: topic.event) type: com.dimo.zone.device.mint
 	go func() {
 		err := handler.Execute(ctx)
 		if err != nil {
