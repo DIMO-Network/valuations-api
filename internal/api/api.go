@@ -2,15 +2,16 @@ package api
 
 import (
 	"context"
-	"github.com/DIMO-Network/shared"
-	"github.com/IBM/sarama"
-	"github.com/burdiyan/kafkautil"
-	"github.com/lovoo/goka"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/DIMO-Network/shared"
+	"github.com/IBM/sarama"
+	"github.com/burdiyan/kafkautil"
+	"github.com/lovoo/goka"
 
 	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
@@ -182,14 +183,14 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JwtKeySetURL},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
 		},
 	})
 
 	privilegeAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
-		ErrorHandler: func(_ *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
 	})

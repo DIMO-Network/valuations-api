@@ -61,7 +61,7 @@ func (h loadVinVerifiedValuationCommandHandler) Execute(ctx context.Context, com
 	// process requests in parallel
 	for i, ud := range all {
 		wg.Add(1)
-		go func(c context.Context, userDevice *grpc.UserDevice, workerID int) {
+		go func(c context.Context, userDevice *grpc.UserDevice, _ int) {
 			defer wg.Done()
 			semaphore <- struct{}{} // Acquire a token
 			status, _ := h.requestValuation(c, userDevice)

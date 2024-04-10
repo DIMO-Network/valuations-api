@@ -2,14 +2,15 @@ package services
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/lovoo/goka"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
-	"strings"
-	"time"
 )
 
 const NorthAmercanCountries = "USA,CAN,MEX,PRI"
@@ -58,8 +59,8 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		return
 	}
 	vin := gjson.GetBytes(jsonBytes, "device.vin").String()
-	tokenId := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
-	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenId).Logger()
+	tokenID := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
+	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenID).Logger()
 
 	if len(vin) == 0 {
 		localLog.Error().Msg("vin was empty")
@@ -71,7 +72,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		return
 	}
 	localLog = localLog.With().Str("country", userDevice.CountryCode).Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Logger()
-	// todo: pass the tokenId so it can be set in the db
+	// todo: pass the tokenID so it can be set in the db
 	// todo: move tests over
 	// we currently have two vendors for valuations
 	if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
@@ -96,7 +97,6 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 			localLog.Info().Msgf("valuation request from Vincario completed OK with status %s", status)
 		}
 	}
-	return
 	// todo metrics
 }
 
