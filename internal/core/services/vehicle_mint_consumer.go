@@ -72,25 +72,24 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		return
 	}
 	localLog = localLog.With().Str("country", userDevice.CountryCode).Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Logger()
-	// todo: pass the tokenID so it can be set in the db
 	// todo: move tests over
 	// we currently have two vendors for valuations
 	if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
-		status, err := i.drivlyValuationService.PullValuation(ctx.Context(), userDevice.Id, userDevice.DeviceDefinitionId, vin)
+		status, err := i.drivlyValuationService.PullValuation(ctx.Context(), userDevice.Id, tokenID, userDevice.DeviceDefinitionId, vin)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling drivly data")
 		} else {
 			localLog.Info().Msgf("valuation request from Drivly completed OK with status %s", status)
 		}
 		// in NA, we can also pull the offer
-		status, err = i.drivlyValuationService.PullOffer(ctx.Context(), userDevice.Id)
+		status, err = i.drivlyValuationService.PullOffer(ctx.Context(), userDevice.Id, tokenID, vin)
 		if err != nil && status != core.SkippedDataPullStatus {
 			localLog.Err(err).Msg("failed to process offer request due to internal error")
 		} else {
 			localLog.Info().Msgf("valuation request from Drivly completed OK with status %s", status)
 		}
 	} else {
-		status, err := i.vincarioValuationService.PullValuation(ctx.Context(), userDevice.Id, userDevice.DeviceDefinitionId, vin)
+		status, err := i.vincarioValuationService.PullValuation(ctx.Context(), userDevice.Id, tokenID, userDevice.DeviceDefinitionId, vin)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling vincario data")
 		} else {

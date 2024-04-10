@@ -24,7 +24,6 @@ import (
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
-	"github.com/DIMO-Network/valuations-api/internal/core/commands"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/metrics"
 	"github.com/DIMO-Network/valuations-api/internal/rpc"
@@ -53,22 +52,6 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
-
-	// todo: remove all below code
-	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
-	go func() {
-		err := handler.Execute(ctx)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer for valuation")
-		}
-	}()
-
-	go func() {
-		err := handler.ExecuteOfferSync(ctx)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer for offer sync")
-		}
-	}()
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)

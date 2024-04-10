@@ -11,6 +11,8 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// TODO deprecated code, remove once new stuff working
+
 func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error {
 	sub, err := h.NATSSvc.JetStream.PullSubscribe(h.NATSSvc.OfferSubject, h.NATSSvc.OfferDurableConsumer,
 		nats.AckWait(h.NATSSvc.AckTimeout))
@@ -63,7 +65,7 @@ func (h *runValuationCommandHandler) ExecuteOfferSync(ctx context.Context) error
 					continue
 				}
 
-				status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID)
+				status, err := h.drivlyValuationService.PullOffer(ctx, payload.UserDeviceID, 0, "")
 
 				if err != nil && status != core.SkippedDataPullStatus {
 					// todo: improvement - depending on status returned decide whether to redeliver using h.nak(msg)

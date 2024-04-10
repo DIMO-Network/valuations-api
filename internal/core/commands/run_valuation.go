@@ -15,6 +15,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// TODO deprecated code, remove once new stuff working
+
 //go:generate mockgen -source run_valuation.go -destination mocks/run_valuation_mock.go
 
 type RunValuationCommandHandler interface {
@@ -131,14 +133,14 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 	_ = msg.InProgress() // ignore err if can't set to in progress
 
 	if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
-		status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, valuationDecode.VIN)
+		status, err := h.drivlyValuationService.PullValuation(ctx, userDevice.Id, 0, userDevice.DeviceDefinitionId, valuationDecode.VIN)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling drivly data")
 		} else {
 			localLog.Info().Msgf("valuation request from Drivly completed OK with status %s", status)
 		}
 	} else {
-		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, userDevice.DeviceDefinitionId, valuationDecode.VIN)
+		status, err := h.vincarioValuationService.PullValuation(ctx, userDevice.Id, 0, userDevice.DeviceDefinitionId, valuationDecode.VIN)
 		if err != nil {
 			localLog.Err(err).Msg("valuation request - error pulling vincario data")
 		} else {
