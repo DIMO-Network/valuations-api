@@ -50,8 +50,11 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, natsSvc *services.NATSService,
 	usersClient grpc2.UserServiceClient) {
 
+	// mint events consumer to request valuations and offers for new paired vehicles
+	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
+
+	// todo: remove all below code
 	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
-	// todo thought: replace this with kafka consumer topic: e.Settings.EventsTopic (EVENTS_TOPIC: topic.event) type: com.dimo.zone.device.mint
 	go func() {
 		err := handler.Execute(ctx)
 		if err != nil {
@@ -80,14 +83,17 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 }
 
 // startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
-func startEventsConsumer(settings *config.Settings, logger zerolog.Logger) {
+func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, userDeviceSvc services.UserDeviceAPIService,
+	ddSvc services.DeviceDefinitionsAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
+
+	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc)
 	//goka setup
 	sc := goka.DefaultConfig()
 	sc.Version = sarama.V2_8_1_0
 	goka.ReplaceGlobalConfig(sc)
-	// todo: need event from devices-api for the mint, and a consumer with the logic just like NewRunValuationCommandHandler
+
 	group := goka.DefineGroup("valuation-trigger-consumer",
-		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[services.DeviceStatusEvent]), ingestSvc.ProcessDeviceStatusMessages),
+		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[services.VehicleMintEvent]), ingestSvc.ProcessVehicleMintMsg),
 	)
 
 	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),

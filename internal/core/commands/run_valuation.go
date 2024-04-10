@@ -116,7 +116,7 @@ func (h *runValuationCommandHandler) processMessage(ctx context.Context, localLo
 		return errors.Wrap(err, "unable to parse vin from message")
 	}
 	localLog = localLog.With().Str("vin", valuationDecode.VIN).Uint64("num_delivered", numDelivered).
-		Str("user_device_id", valuationDecode.UserDeviceID).Logger()
+		Str("userDeviceId", valuationDecode.UserDeviceID).Logger()
 
 	userDevice, err := h.userDeviceService.GetUserDevice(ctx, valuationDecode.UserDeviceID)
 	if err != nil {
