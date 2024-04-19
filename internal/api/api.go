@@ -47,15 +47,17 @@ import (
 )
 
 func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService,
-	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, natsSvc *services.NATSService,
-	usersClient grpc2.UserServiceClient) {
+	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, usersClient grpc2.UserServiceClient) {
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc, usersClient)
+
+	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc, userDeviceSvc)
+	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, usersClient, drivlySvc, vincarioSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -139,7 +141,8 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService, natsSrvc services.NATSService, usersClient grpc2.UserServiceClient) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService,
+	usersClient grpc2.UserServiceClient, drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -160,8 +163,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, &natsSrvc)
-	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, &natsSrvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
+	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
@@ -186,6 +189,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	// so that we can correctly lookup the userDeviceId owner as multiple user records could point to same user as defined by a wallet addr
 	deviceMw := owner.New(usersClient, userDeviceSvc, &logger)
 
+	// deprecate once mobile app switches to /v2 below, notice difference btw valuations and vehicles controller name
 	udOwner := v1Auth.Group("/user/devices/:userDeviceID", deviceMw)
 	udOwner.Get("/valuations", valuationsController.GetValuations)
 	udOwner.Get("/offers", valuationsController.GetOffers)

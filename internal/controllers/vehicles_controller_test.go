@@ -22,11 +22,13 @@ import (
 
 type VehiclesControllerTestSuite struct {
 	suite.Suite
-	controller    *VehiclesController
-	ctx           context.Context
-	mockCtrl      *gomock.Controller
-	app           *fiber.App
-	userDeviceSvc *mock_services.MockUserDeviceAPIService
+	controller           *VehiclesController
+	ctx                  context.Context
+	mockCtrl             *gomock.Controller
+	app                  *fiber.App
+	userDeviceSvc        *mock_services.MockUserDeviceAPIService
+	drivlyValuationSvc   *mock_services.MockDrivlyValuationService
+	vincarioValuationSvc *mock_services.MockVincarioValuationService
 }
 
 // SetupSuite starts container db
@@ -36,6 +38,8 @@ func (s *VehiclesControllerTestSuite) SetupSuite() {
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
 	s.userDeviceSvc = mock_services.NewMockUserDeviceAPIService(mockCtrl)
+	s.drivlyValuationSvc = mock_services.NewMockDrivlyValuationService(mockCtrl)
+	s.vincarioValuationSvc = mock_services.NewMockVincarioValuationService(mockCtrl)
 
 	var err error
 
@@ -43,8 +47,7 @@ func (s *VehiclesControllerTestSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
-	//TODO: check for drivly service api mock
-	controller := NewVehiclesController(logger, s.userDeviceSvc, nil)
+	controller := NewVehiclesController(logger, s.userDeviceSvc, s.drivlyValuationSvc, s.vincarioValuationSvc)
 	app := dbtest.SetupAppFiber(*logger)
 	app.Get("/vehicles/:tokenID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
 	app.Get("/vehicles/:tokenID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)

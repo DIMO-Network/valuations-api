@@ -23,11 +23,13 @@ const userID = "2TqxFTIQPZ3gnUPi3Pdb3eEZDx4"
 
 type ValuationsControllerTestSuite struct {
 	suite.Suite
-	controller    *ValuationsController
-	ctx           context.Context
-	mockCtrl      *gomock.Controller
-	app           *fiber.App
-	userDeviceSvc *mock_services.MockUserDeviceAPIService
+	controller           *ValuationsController
+	ctx                  context.Context
+	mockCtrl             *gomock.Controller
+	app                  *fiber.App
+	userDeviceSvc        *mock_services.MockUserDeviceAPIService
+	drivlyValuationSvc   *mock_services.MockDrivlyValuationService
+	vincarioValuationSvc *mock_services.MockVincarioValuationService
 }
 
 // SetupSuite starts container db
@@ -37,6 +39,8 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	mockCtrl := gomock.NewController(s.T())
 	s.mockCtrl = mockCtrl
 	s.userDeviceSvc = mock_services.NewMockUserDeviceAPIService(mockCtrl)
+	s.drivlyValuationSvc = mock_services.NewMockDrivlyValuationService(mockCtrl)
+	s.vincarioValuationSvc = mock_services.NewMockVincarioValuationService(mockCtrl)
 
 	var err error
 
@@ -45,7 +49,7 @@ func (s *ValuationsControllerTestSuite) SetupSuite() {
 	}
 
 	//TODO: check for drivly service api mock
-	controller := NewValuationsController(logger, s.userDeviceSvc, nil)
+	controller := NewValuationsController(logger, s.userDeviceSvc, s.drivlyValuationSvc, s.vincarioValuationSvc)
 	app := dbtest.SetupAppFiber(*logger)
 	app.Get("/user/devices/:userDeviceID/offers", dbtest.AuthInjectorTestHandler(userID), controller.GetOffers)
 	app.Get("/user/devices/:userDeviceID/valuations", dbtest.AuthInjectorTestHandler(userID), controller.GetValuations)
