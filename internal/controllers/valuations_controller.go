@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"encoding/json"
+	"strings"
 
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
@@ -12,16 +12,18 @@ import (
 type ValuationsController struct {
 	log               *zerolog.Logger
 	userDeviceService services.UserDeviceAPIService
-	natsService       *services.NATSService
+	drivlySvc         services.DrivlyValuationService
+	vincarioSvc       services.VincarioValuationService
 }
 
 func NewValuationsController(log *zerolog.Logger,
 	userDeviceSvc services.UserDeviceAPIService,
-	natsService *services.NATSService) *ValuationsController {
+	drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *ValuationsController {
 	return &ValuationsController{
 		log:               log,
 		userDeviceService: userDeviceSvc,
-		natsService:       natsService,
+		drivlySvc:         drivlySvc,
+		vincarioSvc:       vincarioSvc,
 	}
 }
 
@@ -32,7 +34,7 @@ func NewValuationsController(log *zerolog.Logger,
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} core.DeviceValuation
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/valuations [get]
+// @Router      /v1/user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
@@ -55,7 +57,7 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} core.DeviceOffer
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/offers [get]
+// @Router      /v1/user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	offer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), udi)
@@ -74,21 +76,24 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/instant-offer [get]
+// @Router      /v1/user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 
-	localLog := vc.log.With().Str("user_device_id", udi).Logger()
+	localLog := vc.log.With().Str("user_device_id", udi).Str("path", c.Path()).Logger()
 
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
 	if err != nil {
-		vc.log.Err(err).Msg("failed to get user device")
+		localLog.Err(err).Msg("failed to get user device")
 		return err
+	}
+	if ud.TokenId == nil {
+		return fiber.NewError(fiber.StatusBadRequest, "your vehicle is not minted or not setup correctly - missing tokenId")
 	}
 
 	canRequestInsantOffer, err := vc.userDeviceService.CanRequestInstantOffer(c.Context(), ud.Id)
 	if err != nil {
-		vc.log.Err(err).Msg("failed to check if user can request instant offer")
+		localLog.Err(err).Msg("failed to check if user can request instant offer")
 		return err
 	}
 
@@ -99,29 +104,27 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	didGetErrorLastTime, err := vc.userDeviceService.LastRequestDidGiveError(c.Context(), ud.Id)
 
 	if err != nil {
-		vc.log.Err(err).Msg("failed to check if user can request instant offer")
+		localLog.Err(err).Msg("failed to check if user can request instant offer")
 		return err
 	}
 
 	if didGetErrorLastTime {
 		return fiber.NewError(fiber.StatusBadRequest, "no offers found for you vehicle in last request")
 	}
-
-	request := core.OfferRequest{UserDeviceID: ud.Id}
-	requestBytes, err := json.Marshal(request)
-	if err != nil {
-		localLog.Err(err).Msg("failed to marshal offer request")
-		return err
-	}
-
-	ack, err := vc.natsService.JetStream.Publish(vc.natsService.OfferSubject, requestBytes)
-	if err != nil {
-		localLog.Err(err).Msg("failed to publish offer request")
+	var valuationErr error
+	var status core.DataPullStatusEnum
+	// this used to be async with nats, but trying just making it syncronous since doesn't really take that long, more now that vroom disabled.
+	if strings.Contains(services.NorthAmercanCountries, ud.CountryCode) {
+		status, valuationErr = vc.drivlySvc.PullOffer(c.Context(), ud.Id, *ud.TokenId, *ud.Vin)
 	} else {
-		localLog.Info().Msgf("published offer request with id: %v", ack.Sequence)
+		status, valuationErr = vc.vincarioSvc.PullValuation(c.Context(), ud.Id, *ud.TokenId, ud.DeviceDefinitionId, *ud.Vin)
 	}
+	if valuationErr != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
+	}
+	localLog.Info().Msgf("succesfully requested offer with status %s", status)
 
 	return c.JSON(fiber.Map{
-		"message": "instant offer request sent",
+		"message": "instant offer request completed: " + status,
 	})
 }

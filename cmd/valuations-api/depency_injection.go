@@ -57,13 +57,14 @@ func (dc *dependencyContainer) getDeviceDataService() (services.UserDeviceDataAP
 	return dc.deviceDataSvc, deviceDataConn
 }
 
-func (dc *dependencyContainer) getNATSService() *services.NATSService {
-	service, err := services.NewNATSService(dc.settings, dc.logger)
-	if err != nil {
-		dc.logger.Fatal().Err(err).Msg("failed to connect to NATS server")
-	}
-	return service
-}
+// todo deprecated remove once instant offers validated working ok
+//func (dc *dependencyContainer) getNATSService() *services.NATSService {
+//	service, err := services.NewNATSService(dc.settings, dc.logger)
+//	if err != nil {
+//		dc.logger.Fatal().Err(err).Msg("failed to connect to NATS server")
+//	}
+//	return service
+//}
 
 func (dc *dependencyContainer) getUsersClient(logger zerolog.Logger, usersAPIGRPCAddr string) (pb.UserServiceClient, *grpc.ClientConn) {
 	usersConn, err := grpc.Dial(usersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))

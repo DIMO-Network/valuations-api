@@ -5,7 +5,13 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"github.com/DIMO-Network/shared"
+	"github.com/IBM/sarama"
+	"github.com/burdiyan/kafkautil"
+	"github.com/lovoo/goka"
 
 	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
@@ -18,7 +24,6 @@ import (
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
-	"github.com/DIMO-Network/valuations-api/internal/core/commands"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/metrics"
 	"github.com/DIMO-Network/valuations-api/internal/rpc"
@@ -42,28 +47,17 @@ import (
 )
 
 func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService,
-	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, natsSvc *services.NATSService,
-	usersClient grpc2.UserServiceClient) {
+	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, usersClient grpc2.UserServiceClient) {
 
-	handler := commands.NewRunValuationCommandHandler(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc, natsSvc)
-
-	go func() {
-		err := handler.Execute(ctx)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer for valuation")
-		}
-	}()
-
-	go func() {
-		err := handler.ExecuteOfferSync(ctx)
-		if err != nil {
-			logger.Error().Err(err).Msg("unable to start nats consumer for offer sync")
-		}
-	}()
+	// mint events consumer to request valuations and offers for new paired vehicles
+	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, *natsSvc, usersClient)
+
+	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc, userDeviceSvc)
+	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, usersClient, drivlySvc, vincarioSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -72,6 +66,38 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
 	_ = ctx.Done()
+}
+
+// startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
+func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, userDeviceSvc services.UserDeviceAPIService,
+	ddSvc services.DeviceDefinitionsAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
+
+	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc)
+	//goka setup
+	sc := goka.DefaultConfig()
+	sc.Version = sarama.V2_8_1_0
+	goka.ReplaceGlobalConfig(sc)
+
+	group := goka.DefineGroup("valuation-trigger-consumer",
+		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[services.VehicleMintEvent]), ingestSvc.ProcessVehicleMintMsg),
+	)
+
+	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
+		group,
+		goka.WithHasher(kafkautil.MurmurHasher),
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Could not start valuations trigger processor")
+	}
+
+	go func() {
+		err = processor.Run(context.Background())
+		if err != nil {
+			logger.Fatal().Err(err).Msg("could not run device status processor")
+		}
+	}()
+
+	logger.Info().Msg("valuations trigger from vehicle mint consumer started")
 }
 
 // startMonitoringServer start server for monitoring endpoints. Could likely be moved to shared lib.
@@ -115,7 +141,8 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService, natsSrvc services.NATSService, usersClient grpc2.UserServiceClient) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService,
+	usersClient grpc2.UserServiceClient, drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -136,20 +163,20 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, &natsSrvc)
-	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, &natsSrvc)
+	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
+	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JwtKeySetURL},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
 		},
 	})
 
 	privilegeAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
-		ErrorHandler: func(_ *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
 	})
@@ -162,6 +189,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	// so that we can correctly lookup the userDeviceId owner as multiple user records could point to same user as defined by a wallet addr
 	deviceMw := owner.New(usersClient, userDeviceSvc, &logger)
 
+	// deprecate once mobile app switches to /v2 below, notice difference btw valuations and vehicles controller name
 	udOwner := v1Auth.Group("/user/devices/:userDeviceID", deviceMw)
 	udOwner.Get("/valuations", valuationsController.GetValuations)
 	udOwner.Get("/offers", valuationsController.GetOffers)

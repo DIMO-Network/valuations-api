@@ -3,6 +3,9 @@ package services
 import (
 	"context"
 
+	"github.com/ericlagergren/decimal"
+	"github.com/volatiletech/sqlboiler/v4/types"
+
 	"strings"
 	"time"
 
@@ -21,7 +24,7 @@ import (
 //go:generate mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go
 
 type VincarioValuationService interface {
-	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
 }
 
 type vincarioValuationService struct {
@@ -40,7 +43,7 @@ func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logge
 	}
 }
 
-func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
+func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
@@ -73,6 +76,8 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, userDevice
 		DeviceDefinitionID: null.StringFrom(deviceDefinitionID),
 		Vin:                vin,
 		UserDeviceID:       null.StringFrom(userDeviceID),
+		// we need a better way to do this that can just cast straight from a uint64
+		TokenID: types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
 	}
 
 	valuation, err := d.vincarioSvc.GetMarketValuation(vin)

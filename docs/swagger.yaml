@@ -1,4 +1,3 @@
-basePath: /v1
 definitions:
   github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer:
     properties:
@@ -145,7 +144,7 @@ info:
   title: DIMO Vehicle Valuations API
   version: "1.0"
 paths:
-  /user/devices/{userDeviceID}/instant-offer:
+  /v1/user/devices/{userDeviceID}/instant-offer:
     get:
       description: |-
         makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
@@ -165,7 +164,7 @@ paths:
       - BearerAuth: []
       tags:
       - offers
-  /user/devices/{userDeviceID}/offers:
+  /v1/user/devices/{userDeviceID}/offers:
     get:
       description: gets any existing offers for a particular user device. You must
         call instant-offer endpoint first to pull.
@@ -186,7 +185,7 @@ paths:
       - BearerAuth: []
       tags:
       - offers
-  /user/devices/{userDeviceID}/valuations:
+  /v1/user/devices/{userDeviceID}/valuations:
     get:
       description: gets valuations for a particular user device. Includes only price
         valuations, not offers. only gets the latest valuation.
@@ -207,7 +206,7 @@ paths:
       - BearerAuth: []
       tags:
       - valuations
-  /vehicles/{tokenId}/instant-offer:
+  /v2/vehicles/{tokenId}/instant-offer:
     post:
       description: |-
         makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
@@ -227,7 +226,7 @@ paths:
       - BearerAuth: []
       tags:
       - offers
-  /vehicles/{tokenId}/offers:
+  /v2/vehicles/{tokenId}/offers:
     get:
       description: gets any existing offers for a particular user device. You must
         call instant-offer endpoint first to pull newer. Returns list.
@@ -248,7 +247,7 @@ paths:
       - BearerAuth: []
       tags:
       - offers
-  /vehicles/{tokenId}/valuations:
+  /v2/vehicles/{tokenId}/valuations:
     get:
       description: gets valuations for a particular user device. Includes only price
         valuations, not offers. gets list of most recent

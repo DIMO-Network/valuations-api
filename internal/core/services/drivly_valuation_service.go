@@ -29,8 +29,8 @@ import (
 //go:generate mockgen -source drivly_valuation_service.go -destination mocks/drivly_valuation_service_mock.go
 
 type DrivlyValuationService interface {
-	PullValuation(ctx context.Context, userDeiceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
-	PullOffer(ctx context.Context, userDeviceID string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, userDeviceID string, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -55,7 +55,9 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 	}
 }
 
-func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
+// PullValuation performs a data pull for a vehicle valuation. It retrieves pricing and
+// other relevant data for a given VIN. Not necessary for the userDevice to exist, VIN is what matters
+func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
@@ -66,15 +68,6 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		return core.ErrorDataPullStatus, err
 	}
 	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", deviceDefinitionID).Str("user_device_id", userDeviceID).Logger()
-
-	// make sure userdevice exists
-	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
-	if err != nil {
-		return core.ErrorDataPullStatus, err
-	}
-	if userDevice.TokenId == nil {
-		return core.ErrorDataPullStatus, fmt.Errorf("valuation pull requires vehicle to have a TokenID. userDeviceID: %s", userDeviceID)
-	}
 
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
@@ -94,7 +87,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		DeviceDefinitionID: null.StringFrom(deviceDef.DeviceDefinitionId),
 		Vin:                vin,
 		UserDeviceID:       null.StringFrom(userDeviceID),
-		TokenID:            types.NewNullDecimal(decimal.New(int64(*userDevice.TokenId), 0)),
+		TokenID:            types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
 	}
 
 	// get mileage for the drivly request
@@ -111,8 +104,13 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	reqData := ValuationRequestData{
 		Mileage: &deviceMileage,
 	}
+	// handle postal code information to send to drivly and store for future use
+	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	if err != nil {
+		localLog.Err(err).Msg("failed to get user device")
+	}
 
-	if userDevice.PostalCode == "" && userDeviceData != nil && len(userDeviceData.Items) > 0 {
+	if userDevice != nil && userDevice.PostalCode == "" && userDeviceData != nil && len(userDeviceData.Items) > 0 {
 		// need to geodecode the postal code
 		lat := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "latitude.value").Float()
 		long := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "longitude.value").Float()
@@ -140,7 +138,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		}
 	}
 
-	if userDevice.PostalCode != "" {
+	if userDevice != nil && userDevice.PostalCode != "" {
 		reqData.ZipCode = &userDevice.PostalCode
 	}
 	_ = valuation.RequestMetadata.Marshal(reqData)
@@ -151,7 +149,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	}
 
 	// check on edmunds data so we can get the style id
-	edmundsExists, _ := models.Valuations(models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDevice.Id)),
+	edmundsExists, _ := models.Valuations(models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
 		models.ValuationWhere.EdmundsMetadata.IsNotNull()).Exists(ctx, d.dbs().Reader)
 	if !edmundsExists {
 		// extra optional data that only needs to be pulled once.
@@ -160,11 +158,11 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 			_ = valuation.EdmundsMetadata.Marshal(edmunds)
 		}
 		// fill in edmunds style_id in our user_device if it exists and not already set. None of these seen as bad errors so just logs
-		if edmunds != nil && userDevice.DeviceStyleId == nil {
+		if edmunds != nil && userDevice != nil && userDevice.DeviceStyleId == nil {
 			d.setUserDeviceStyleFromEdmunds(ctx, edmunds, userDevice)
-			localLog.Info().Msgf("set device_style_id for userDevice id %s", userDevice.Id)
+			localLog.Info().Msgf("set device_style_id for userDevice id %s", userDeviceID)
 		} else {
-			localLog.Warn().Msgf("could not set edmunds style id. edmunds data exists: %v. userDevice style_id already set: %v", edmunds != nil, userDevice.DeviceStyleId)
+			localLog.Warn().Msgf("could not set edmunds style id. edmunds data exists: %v", edmunds != nil)
 		}
 	}
 
@@ -178,26 +176,21 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	return core.PulledValuationDrivlyStatus, nil
 }
 
-func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
 	// make sure userdevice exists
 	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
 
-	if userDevice.Vin == nil {
-		return core.ErrorDataPullStatus, fmt.Errorf("instant offer feature requires vehicle to have a VIN")
+	if len(vin) != 17 {
+		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
-	if len(*userDevice.Vin) != 17 {
-		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", *userDevice.Vin)
-	}
-	if userDevice.TokenId == nil {
-		return core.ErrorDataPullStatus, fmt.Errorf("instant offer requires vehicle to have a TokenID. userDeviceID: %s", userDeviceID)
-	}
-	localLog := d.log.With().Str("vin", *userDevice.Vin).Str("device_definition_id", userDevice.DeviceDefinitionId).Str("user_device_id", userDeviceID).Logger()
+
+	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", userDevice.DeviceDefinitionId).Str("user_device_id", userDeviceID).Logger()
 
 	existingOfferData, _ := models.Valuations(
-		models.ValuationWhere.Vin.EQ(*userDevice.Vin),
+		models.ValuationWhere.Vin.EQ(vin),
 		models.ValuationWhere.OfferMetadata.IsNotNull(),
 		qm.OrderBy("updated_at desc"), qm.Limit(1)).
 		One(ctx, d.dbs().Writer)
@@ -207,7 +200,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 			return core.SkippedDataPullStatus, fmt.Errorf("instant offer already request in last 30 days")
 		}
 	}
-
+	// future: pull by tokenID from identity-api
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, userDevice.DeviceDefinitionId)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
@@ -230,7 +223,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		ZipCode: &userDevice.PostalCode,
 	}
 
-	offer, err := d.drivlySvc.GetOffersByVIN(*userDevice.Vin, &params)
+	offer, err := d.drivlySvc.GetOffersByVIN(vin, &params)
 
 	if err != nil {
 		localLog.Err(err).Msg("error pulling drivly offer data")
@@ -241,10 +234,13 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	newOffer := &models.Valuation{
 		ID:                 ksuid.New().String(),
 		DeviceDefinitionID: null.StringFrom(userDevice.DeviceDefinitionId),
-		Vin:                *userDevice.Vin,
+		Vin:                vin,
 		UserDeviceID:       null.StringFrom(userDeviceID),
-		RequestMetadata:    null.JSON{},
-		TokenID:            types.NewNullDecimal(decimal.New(int64(*userDevice.TokenId), 0)),
+		TokenID:            types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
+	}
+	pj, err := json.Marshal(params)
+	if err == nil {
+		newOffer.OfferMetadata = null.JSONFrom(pj)
 	}
 	_ = newOffer.OfferMetadata.Marshal(offer)
 

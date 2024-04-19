@@ -45,10 +45,10 @@ func DecodeOfferFromJSON(drivlyJSON []byte) OfferSet {
 	drivlyOffers.Source = "drivly"
 
 	// Drivly Offers
-	gjson.GetBytes(drivlyJSON, `@keys.#(%"*Price")#`).ForEach(func(key, value gjson.Result) bool {
+	gjson.GetBytes(drivlyJSON, `@keys.#(%"*Price")#`).ForEach(func(_, value gjson.Result) bool {
 		offer := Offer{}
 		offer.Vendor = strings.TrimSuffix(value.String(), "Price") // eg. vroom, carvana, or carmax
-		gjson.GetBytes(drivlyJSON, `@keys.#(%"`+offer.Vendor+`*")#`).ForEach(func(key, value gjson.Result) bool {
+		gjson.GetBytes(drivlyJSON, `@keys.#(%"`+offer.Vendor+`*")#`).ForEach(func(_, value gjson.Result) bool {
 			prop := strings.TrimPrefix(value.String(), offer.Vendor)
 			if prop == "Url" {
 				prop = "URL"
