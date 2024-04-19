@@ -111,7 +111,7 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse token id.")
 	}
 
-	localLog := vc.log.With().Str("token_id", tidStr).Logger()
+	localLog := vc.log.With().Str("token_id", tidStr).Str("path", c.Path()).Logger()
 
 	ud, err := vc.userDeviceService.GetUserDeviceByTokenID(c.Context(), tokenID)
 	if err != nil {
@@ -148,6 +148,7 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	if valuationErr != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
 	}
+	localLog.Info().Msgf("succesfully requested offer with status %s", status)
 
 	return c.JSON(fiber.Map{
 		"message": "instant offer request completed: " + status,

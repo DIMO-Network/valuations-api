@@ -80,7 +80,7 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 
-	localLog := vc.log.With().Str("user_device_id", udi).Logger()
+	localLog := vc.log.With().Str("user_device_id", udi).Str("path", c.Path()).Logger()
 
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
 	if err != nil {
@@ -122,6 +122,7 @@ func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	if valuationErr != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
 	}
+	localLog.Info().Msgf("succesfully requested offer with status %s", status)
 
 	return c.JSON(fiber.Map{
 		"message": "instant offer request completed: " + status,
