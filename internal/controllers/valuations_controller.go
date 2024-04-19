@@ -34,7 +34,7 @@ func NewValuationsController(log *zerolog.Logger,
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} core.DeviceValuation
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/valuations [get]
+// @Router      /v1/user/devices/{userDeviceID}/valuations [get]
 func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	ud, err := vc.userDeviceService.GetUserDevice(c.Context(), udi)
@@ -57,7 +57,7 @@ func (vc *ValuationsController) GetValuations(c *fiber.Ctx) error {
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200 {object} core.DeviceOffer
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/offers [get]
+// @Router      /v1/user/devices/{userDeviceID}/offers [get]
 func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 	offer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), udi)
@@ -76,7 +76,7 @@ func (vc *ValuationsController) GetOffers(c *fiber.Ctx) error {
 // @Param 		userDeviceID path string true "userDeviceID for vehicle to get offers"
 // @Success     200
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/instant-offer [get]
+// @Router      /v1/user/devices/{userDeviceID}/instant-offer [get]
 func (vc *ValuationsController) GetInstantOffer(c *fiber.Ctx) error {
 	udi := c.Params("userDeviceID")
 

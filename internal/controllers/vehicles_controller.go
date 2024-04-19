@@ -36,7 +36,7 @@ func NewVehiclesController(log *zerolog.Logger,
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
 // @Success     200 {object} core.DeviceValuation
 // @Security    BearerAuth
-// @Router      /vehicles/{tokenId}/valuations [get]
+// @Router      /v2/vehicles/{tokenId}/valuations [get]
 func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 	tidStr := c.Params("tokenId")
 	tokenID, ok := new(big.Int).SetString(tidStr, 10)
@@ -69,7 +69,7 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 // @Param 		tokenId path string true "tokenId for vehicle to get offers"
 // @Success     200 {object} core.DeviceOffer
 // @Security    BearerAuth
-// @Router      /vehicles/{tokenId}/offers [get]
+// @Router      /v2/vehicles/{tokenId}/offers [get]
 func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 	tidStr := c.Params("tokenId")
 	tokenID, ok := new(big.Int).SetString(tidStr, 10)
