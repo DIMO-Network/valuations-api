@@ -49,21 +49,24 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	if event.Type != "com.dimo.zone.device.mint" {
 		i.logger.Debug().Msgf("not processing event since of type: %s", event.Type) // change this to debug level after testing
 	}
-	localLog := i.logger.With().Str("userDeviceId", event.ID).Logger()
 	// change below to debug once validate
-	localLog.Info().Str("payload", string(event.Data)).Msg("processing vehicle mint event for valuation/offer trigger")
+	i.logger.Info().Str("payload", string(event.Data)).Msg("processing vehicle mint event for valuation/offer trigger")
 
-	userDevice, err := i.userDeviceService.GetUserDevice(ctx.Context(), event.ID)
+	jsonBytes, err := event.Data.MarshalJSON()
+	if err != nil {
+		i.logger.Err(err).Msg("failed to marshal event data")
+		return
+	}
+	userDeviceID := gjson.GetBytes(event.Data, "device.id").String()
+
+	localLog := i.logger.With().Str("userDeviceId", userDeviceID).Logger()
+
+	userDevice, err := i.userDeviceService.GetUserDevice(ctx.Context(), userDeviceID)
 	if err != nil {
 		localLog.Error().Msg("unable to find user device")
 		return
 	}
 
-	jsonBytes, err := event.Data.MarshalJSON()
-	if err != nil {
-		localLog.Err(err).Msg("failed to marshal event data")
-		return
-	}
 	vin := gjson.GetBytes(jsonBytes, "device.vin").String()
 	tokenID := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
 	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenID).Logger()
