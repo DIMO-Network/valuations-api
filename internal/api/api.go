@@ -50,7 +50,8 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, usersClient grpc2.UserServiceClient) {
 
 	// mint events consumer to request valuations and offers for new paired vehicles
-	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
+	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
+	//startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
