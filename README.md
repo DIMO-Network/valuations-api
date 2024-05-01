@@ -1,19 +1,39 @@
 # valuations-api
 
-Api for obtaining and querying vehicle valuations. 
+There are four entry points to this application:
+
+1. Command line Batch script `pull-valuations`. This is what is run by the kubernetes cronjob to pull new valuations every so often.
+   It is defined in /cmd/valuations-api/pull_valuations.go
+2. Kafka event consumer. This triggers new valuations from newly paired vehicles. Listens to events topic, and filters for
+   the `com.dimo.zone.device.mint` event type. This is currently disabled b/c we were getting way too many events - most 
+   likely need to filter by more parameters to isolate only new pairings that have a tokenId. 
+   defined in `vehicle_mint_consumer.go`
+3. REST API. Serves up some rest endpoints that Frontend clients use to get previously pulled valuations, or request a new instant offer.
+   defined in `internal/api/api.go` -> `StartWebAPI`.
+4. gRPC served endpoints used for internal cluster communication operations.
 
 ## Developing locally
 
-**TL;DR**
+This application has various dependencies, which can be viewed in main.go
+Aside from needing a database and kafka locally, also needs to connect via gRPC to following services:
+- device-definitions-api (future, move to identity-api)
+- devices-api (future, move to identity-api)
+- device-data-api (future, move to telemetry-api)
+- users-api
 
-```bash
-cp settings.sample.yaml settings.yaml
-docker compose up -d
-go run ./cmd/valuations-api
-```
+Currently do not have a short & easy way to run this, but steps basically boil down to:
 
-Create DB locally:
-`create database valuations_api with owner dimo;`
+- get https://github.com/DIMO-Network/cluster-local and follow instructions there so that you have all above dependencies
+- `$ cp settings.sample.yaml settings.yaml`
+- modify `settings.yaml` so that dependent services port numbers match what is being hosted by local cluster (everything should be localhost)
+- create local db if not exists: `create database valuations_api with owner dimo;`. Assumes you're using `dimo` user locally.
+- run migrations: `go run ./cmd/valuations-api migrate`
+- Run batch script: `go run ./cmd/valuations-api pull-valuations`
+- Run events consumer, REST and gRPC: `go run ./cmd/valuations-api`
+
+Thoughts on improving local dev:
+- Only require dependencies needed for the entrypoint of the app you're trying to run (eg. batch script doesn't need kafka consumer).
+- migrating to identity-api may allow some reduction in dependencies, and locally could just run against dev data in cloud.
 
 ## GRPC Generating client and server code
 
