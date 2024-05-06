@@ -12,7 +12,7 @@ require (
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b
 	github.com/docker/go-connections v0.5.0
 	github.com/ericlagergren/decimal v0.0.0-20221120152707-495c53812d05
-	github.com/ethereum/go-ethereum v1.13.12
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/adaptor/v2 v2.2.1
 	github.com/gofiber/contrib/jwt v1.0.8
