@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"os"
 	"os/signal"
@@ -51,7 +52,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
-	//startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
+	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
@@ -80,7 +81,7 @@ func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb d
 	goka.ReplaceGlobalConfig(sc)
 
 	group := goka.DefineGroup("valuation-trigger-consumer",
-		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[services.VehicleMintEvent]), ingestSvc.ProcessVehicleMintMsg),
+		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[shared.CloudEvent[json.RawMessage]]), ingestSvc.ProcessVehicleMintMsg),
 	)
 
 	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
