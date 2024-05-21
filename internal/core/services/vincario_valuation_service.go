@@ -44,7 +44,7 @@ func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logge
 }
 
 func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
-	const repullWindow = time.Hour * 24 * 14
+	const repullWindow = time.Hour * 24 * 30 // one month
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
 	}
