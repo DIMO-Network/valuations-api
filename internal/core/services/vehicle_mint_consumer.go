@@ -2,9 +2,10 @@ package services
 
 import (
 	"encoding/json"
-	"github.com/DIMO-Network/shared"
 	"strings"
 	"time"
+
+	"github.com/DIMO-Network/shared"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
