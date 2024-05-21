@@ -65,12 +65,9 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	tokenID := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
 	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenID).Logger()
 	if len(vin) != 17 && tokenID == 0 {
-		localLog.Warn().Msg("invalid vin or tokenId")
+		localLog.Warn().Str("payload", string(event.Data)).Msg("invalid vin or tokenId")
 		return
 	}
-
-	// change below to debug once validate
-	i.logger.Info().Str("payload", string(event.Data)).Msg("processing vehicle mint event for valuation/offer trigger")
 
 	userDevice, err := i.userDeviceService.GetUserDevice(ctx.Context(), userDeviceID)
 	if err != nil {
@@ -93,7 +90,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		if err != nil && status != core.SkippedDataPullStatus {
 			localLog.Err(err).Msg("failed to process offer request due to internal error")
 		} else {
-			localLog.Info().Msgf("valuation request from Drivly completed OK with status %s", status)
+			localLog.Info().Msgf("instant offer from Drivly completed OK with status %s", status)
 		}
 	} else {
 		status, err := i.vincarioValuationService.PullValuation(ctx.Context(), userDevice.Id, tokenID, userDevice.DeviceDefinitionId, vin)
