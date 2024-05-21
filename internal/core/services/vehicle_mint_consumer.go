@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"github.com/DIMO-Network/shared"
 	"strings"
 	"time"
 
@@ -44,49 +45,36 @@ func NewVehicleMintValuationIngest(dbs func() *db.ReaderWriter, logger zerolog.L
 // ProcessVehicleMintMsg gets mint event types and requests a valuation and offer for the VIN in the message
 func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg any) {
 	// if have issues with context etc use context.Background() instead of the goka one
-	event := msg.(*VehicleMintEvent)
+	event := msg.(*shared.CloudEvent[json.RawMessage])
 	// event.ID is the userDeviceId, set from devices-api
-	if event.Type != "com.dimo.zone.device.mint" {
+	if event.Type != "com.dimo.zone.device.mint" && event.Source != "devices-api" {
 		i.logger.Debug().Msgf("not processing event since of type: %s", event.Type) // change this to debug level after testing
+		return
 	}
-	// change below to debug once validate
-	i.logger.Info().Str("payload", string(event.Data)).Msg("processing vehicle mint event for valuation/offer trigger")
+	userDeviceID := event.Subject
+	localLog := i.logger.With().Str("userDeviceId", userDeviceID).Logger()
 
 	jsonBytes, err := event.Data.MarshalJSON()
 	if err != nil {
 		i.logger.Err(err).Msg("failed to marshal event data")
 		return
 	}
-	userDeviceID := gjson.GetBytes(event.Data, "device.id").String()
+	// we can access the data based on devices-api services.UserDeviceMintEvent
+	vin := strings.TrimSpace(gjson.GetBytes(jsonBytes, "device.vin").String())
+	tokenID := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
+	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenID).Logger()
+	if len(vin) != 17 && tokenID == 0 {
+		localLog.Warn().Msg("invalid vin or tokenId")
+		return
+	}
 
-	localLog := i.logger.With().Str("userDeviceId", userDeviceID).Logger()
+	// change below to debug once validate
+	i.logger.Info().Str("payload", string(event.Data)).Msg("processing vehicle mint event for valuation/offer trigger")
 
 	userDevice, err := i.userDeviceService.GetUserDevice(ctx.Context(), userDeviceID)
 	if err != nil {
 		localLog.Error().Msg("unable to find user device")
 		return
-	}
-
-	vin := gjson.GetBytes(jsonBytes, "device.vin").String()
-	tokenID := gjson.GetBytes(jsonBytes, "nft.tokenId").Uint()
-	localLog = localLog.With().Str("vin", vin).Uint64("tokenId", tokenID).Logger()
-
-	// ideally the event has vin and tokenId, but have legacy fallbacks in case
-	if len(vin) == 0 {
-		if userDevice.Vin != nil {
-			vin = *userDevice.Vin
-		} else {
-			localLog.Error().Msg("skipping - no vin found in payload or userDevice")
-			return
-		}
-	}
-	if tokenID == 0 {
-		if userDevice.TokenId != nil {
-			tokenID = *userDevice.TokenId
-		} else {
-			localLog.Error().Msg("skipping - no tokenId found in payload or userDevice")
-			return
-		}
 	}
 
 	localLog = localLog.With().Str("country", userDevice.CountryCode).Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Logger()
@@ -117,7 +105,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	// todo metrics
 }
 
-// VehicleMintEvent is emitted by devices-api registry/storage.go
+// VehicleMintEvent is emitted by devices-api registry/storage.go Handle(...)
 type VehicleMintEvent struct {
 	ID          string          `json:"id"`
 	Source      string          `json:"source"`
