@@ -44,7 +44,7 @@ func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logge
 }
 
 func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
-	const repullWindow = time.Hour * 24 * 14
+	const repullWindow = time.Hour * 24 * 30 // one month
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
 	}
@@ -81,14 +81,15 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, userDevice
 	}
 
 	valuation, err := d.vincarioSvc.GetMarketValuation(vin)
-
 	if err != nil {
 		return core.ErrorDataPullStatus, errors.Wrap(err, "error pulling market data from vincario")
 	}
+
 	err = externalVinData.VincarioMetadata.Marshal(valuation)
 	if err != nil {
 		return core.ErrorDataPullStatus, errors.Wrap(err, "error marshalling vincario responset")
 	}
+
 	err = externalVinData.Insert(ctx, d.dbs().Writer, boil.Infer())
 	if err != nil {
 		return core.ErrorDataPullStatus, errors.Wrap(err, "error inserting external_vin_data for vincario")

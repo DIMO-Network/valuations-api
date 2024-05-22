@@ -364,26 +364,36 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 
 		valJSON := valuation.VincarioMetadata.JSON
 		requestJSON := valuation.RequestMetadata.JSON
-		odometerMarket := gjson.GetBytes(valJSON, "market_odometer.odometer_avg")
+		// vincario now suports two markets
+		odometerRegion := gjson.GetBytes(valJSON, "market_odometer.europe")
+		if !odometerRegion.Exists() {
+			odometerRegion = gjson.GetBytes(valJSON, "market_odometer.north_america")
+		}
+		odometerMarket := odometerRegion.Get("odometer_avg")
+
 		if odometerMarket.Exists() {
 			valSet.Mileage = int(odometerMarket.Int())
 			valSet.Odometer = int(odometerMarket.Int())
-			valSet.OdometerUnit = gjson.GetBytes(valJSON, "market_odometer.odometer_unit").String()
+			valSet.OdometerUnit = odometerRegion.Get("odometer_unit").String()
 		}
 		// TODO: this needs to be implemented in the load_valuations script
 		requestPostalCode := gjson.GetBytes(requestJSON, "postalCode")
 		if requestPostalCode.Exists() {
 			valSet.ZipCode = requestPostalCode.String()
 		}
+		priceRegion := gjson.GetBytes(valJSON, "market_price.europe")
+		if !priceRegion.Exists() {
+			priceRegion = gjson.GetBytes(valJSON, "market_price.north_america")
+		}
 		// vincario Trade-In - just using the price below mkt mean
-		valSet.TradeIn = int(gjson.GetBytes(valJSON, "market_price.price_below").Float() * ratio)
+		valSet.TradeIn = int(priceRegion.Get("price_below").Float() * ratio)
 		valSet.TradeInAverage = valSet.TradeIn
 		// vincario Retail - just using the price above mkt mean
-		valSet.Retail = int(gjson.GetBytes(valJSON, "market_price.price_above").Float() * ratio)
+		valSet.Retail = int(priceRegion.Get("price_above").Float() * ratio)
 		valSet.RetailAverage = valSet.Retail
 
-		valSet.UserDisplayPrice = int(gjson.GetBytes(valJSON, "market_price.price_avg").Float() * ratio)
-		valSet.Currency = gjson.GetBytes(valJSON, "market_price.price_currency").String()
+		valSet.UserDisplayPrice = int(priceRegion.Get("price_avg").Float() * ratio)
+		valSet.Currency = priceRegion.Get("price_currency").String()
 	}
 	// make sure valid data & set odo type
 	if valSet.Retail > 0 || valSet.TradeIn > 0 {
