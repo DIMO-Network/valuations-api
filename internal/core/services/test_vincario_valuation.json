@@ -1,33 +1,698 @@
 {
-  "vin": "LRW3E7FA2LC110099",
-  "period": {
-    "to": "2023-02-17",
-    "from": "2022-02-17"
+  "vin": "VSKCTND23U0116192",
+  "price": 0,
+  "price_currency": "USD",
+  "balance": {
+    "API Decode": 669,
+    "API Stolen Check": 5,
+    "API Vehicle Market Value": 148,
+    "API OEM VIN Lookup": 0
   },
   "vehicle": {
-    "make": "Tesla",
-    "model": "Model 3",
-    "model_year": 2020,
-    "transmission": "",
-    "fuel_type_primary": "Electric",
-    "engine_displacement_ccm": 0
+    "vehicle_id": 3689,
+    "make": "Nissan",
+    "make_id": 81,
+    "model": "Navara",
+    "model_id": 18155,
+    "model_year": 2019,
+    "engine_displacement_ccm": 2298,
+    "fuel_type_primary": "Diesel",
+    "fuel_type_primary_id": 3
+  },
+  "period": {
+    "from": "2023-05-22",
+    "to": "2024-05-21"
   },
   "market_price": {
-    "price_avg": 51440,
-    "price_mean": 51975,
-    "price_above": 55200,
-    "price_below": 44800,
-    "price_count": 88,
-    "price_stdev": 5188,
-    "price_currency": "EUR"
+    "europe": {
+      "price_count": 81,
+      "price_currency": "EUR",
+      "price_below": 27900,
+      "price_median": 31990,
+      "price_avg": 32115,
+      "price_above": 35000,
+      "price_stdev": 5094
+    }
   },
   "market_odometer": {
-    "odometer_avg": 30137,
-    "odometer_mean": 27750,
-    "odometer_unit": "km",
-    "odometer_above": 43900,
-    "odometer_below": 19000,
-    "odometer_count": 88,
-    "odometer_stdev": 15078
-  }
+    "europe": {
+      "odometer_count": 81,
+      "odometer_unit": "km",
+      "odometer_below": 50000,
+      "odometer_median": 65000,
+      "odometer_avg": 74926,
+      "odometer_above": 95800,
+      "odometer_stdev": 38511
+    }
+  },
+  "records": [
+    {
+      "market": "NL",
+      "continent": "EU",
+      "price": 13250,
+      "price_currency": "EUR",
+      "odometer": 159997,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 20900,
+      "price_currency": "EUR",
+      "odometer": 270000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 24990,
+      "price_currency": "EUR",
+      "odometer": 75680,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 25412,
+      "price_currency": "EUR",
+      "odometer": 114742,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 25990,
+      "price_currency": "EUR",
+      "odometer": 114800,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "AT",
+      "continent": "EU",
+      "price": 26000,
+      "price_currency": "EUR",
+      "odometer": 57000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 26500,
+      "price_currency": "EUR",
+      "odometer": 124900,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 26990,
+      "price_currency": "EUR",
+      "odometer": 123500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 26990,
+      "price_currency": "EUR",
+      "odometer": 120000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "FR",
+      "continent": "EU",
+      "price": 26990,
+      "price_currency": "EUR",
+      "odometer": 123500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 27799,
+      "price_currency": "EUR",
+      "odometer": 133230,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 27900,
+      "price_currency": "EUR",
+      "odometer": 27000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 27900,
+      "price_currency": "EUR",
+      "odometer": 89800,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 27950,
+      "price_currency": "EUR",
+      "odometer": 119036,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 28190,
+      "price_currency": "EUR",
+      "odometer": 70000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 28490,
+      "price_currency": "EUR",
+      "odometer": 83700,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 28500,
+      "price_currency": "EUR",
+      "odometer": 48954,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 28500,
+      "price_currency": "EUR",
+      "odometer": 90300,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 28800,
+      "price_currency": "EUR",
+      "odometer": 134280,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 28990,
+      "price_currency": "EUR",
+      "odometer": 75019,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 29000,
+      "price_currency": "EUR",
+      "odometer": 62000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 29800,
+      "price_currency": "EUR",
+      "odometer": 99500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 29988,
+      "price_currency": "EUR",
+      "odometer": 83813,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 29990,
+      "price_currency": "EUR",
+      "odometer": 75561,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 29990,
+      "price_currency": "EUR",
+      "odometer": 128000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 30000,
+      "price_currency": "EUR",
+      "odometer": 99000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 30000,
+      "price_currency": "EUR",
+      "odometer": 104170,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "NL",
+      "continent": "EU",
+      "price": 30244,
+      "price_currency": "EUR",
+      "odometer": 68654,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 30390,
+      "price_currency": "EUR",
+      "odometer": 72500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 30690,
+      "price_currency": "EUR",
+      "odometer": 142434,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 30950,
+      "price_currency": "EUR",
+      "odometer": 46500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 31000,
+      "price_currency": "EUR",
+      "odometer": 85000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31300,
+      "price_currency": "EUR",
+      "odometer": 65000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31429,
+      "price_currency": "EUR",
+      "odometer": 61000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31480,
+      "price_currency": "EUR",
+      "odometer": 142434,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 31500,
+      "price_currency": "EUR",
+      "odometer": 48000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "FR",
+      "continent": "EU",
+      "price": 31900,
+      "price_currency": "EUR",
+      "odometer": 73300,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31950,
+      "price_currency": "EUR",
+      "odometer": 59500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31970,
+      "price_currency": "EUR",
+      "odometer": 61000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 31990,
+      "price_currency": "EUR",
+      "odometer": 110314,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31990,
+      "price_currency": "EUR",
+      "odometer": 95767,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 31999,
+      "price_currency": "EUR",
+      "odometer": 79000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "FR",
+      "continent": "EU",
+      "price": 31999,
+      "price_currency": "EUR",
+      "odometer": 57170,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "AT",
+      "continent": "EU",
+      "price": 32000,
+      "price_currency": "EUR",
+      "odometer": 59000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 32500,
+      "price_currency": "EUR",
+      "odometer": 45940,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 32500,
+      "price_currency": "EUR",
+      "odometer": 48900,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 32850,
+      "price_currency": "EUR",
+      "odometer": 75860,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 32899,
+      "price_currency": "EUR",
+      "odometer": 46000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 33275,
+      "price_currency": "EUR",
+      "odometer": 60745,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 33490,
+      "price_currency": "EUR",
+      "odometer": 73500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 33490,
+      "price_currency": "EUR",
+      "odometer": 58300,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 33500,
+      "price_currency": "EUR",
+      "odometer": 57530,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 33890,
+      "price_currency": "EUR",
+      "odometer": 52000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 33900,
+      "price_currency": "EUR",
+      "odometer": 50000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 33900,
+      "price_currency": "EUR",
+      "odometer": 58246,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "FR",
+      "continent": "EU",
+      "price": 33900,
+      "price_currency": "EUR",
+      "odometer": 50000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 33900,
+      "price_currency": "EUR",
+      "odometer": 41500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "LU",
+      "continent": "EU",
+      "price": 33900,
+      "price_currency": "EUR",
+      "odometer": 50000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 34000,
+      "price_currency": "EUR",
+      "odometer": 51000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 34490,
+      "price_currency": "EUR",
+      "odometer": 46496,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 34890,
+      "price_currency": "EUR",
+      "odometer": 65000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 34990,
+      "price_currency": "EUR",
+      "odometer": 53252,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 34990,
+      "price_currency": "EUR",
+      "odometer": 73900,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 34999,
+      "price_currency": "EUR",
+      "odometer": 21450,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 35000,
+      "price_currency": "EUR",
+      "odometer": 67000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 35500,
+      "price_currency": "EUR",
+      "odometer": 62733,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 35500,
+      "price_currency": "EUR",
+      "odometer": 85066,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "AT",
+      "continent": "EU",
+      "price": 35690,
+      "price_currency": "EUR",
+      "odometer": 79500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 35880,
+      "price_currency": "EUR",
+      "odometer": 76500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 36488,
+      "price_currency": "EUR",
+      "odometer": 55500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 36750,
+      "price_currency": "EUR",
+      "odometer": 49100,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 36900,
+      "price_currency": "EUR",
+      "odometer": 33900,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 36990,
+      "price_currency": "EUR",
+      "odometer": 32478,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 36990,
+      "price_currency": "EUR",
+      "odometer": 67400,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 37480,
+      "price_currency": "EUR",
+      "odometer": 32696,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 37500,
+      "price_currency": "EUR",
+      "odometer": 63000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "IT",
+      "continent": "EU",
+      "price": 39500,
+      "price_currency": "EUR",
+      "odometer": 25500,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 40500,
+      "price_currency": "EUR",
+      "odometer": 38000,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "DE",
+      "continent": "EU",
+      "price": 40990,
+      "price_currency": "EUR",
+      "odometer": 31200,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "BE",
+      "continent": "EU",
+      "price": 41950,
+      "price_currency": "EUR",
+      "odometer": 10741,
+      "odometer_unit": "km"
+    },
+    {
+      "market": "ES",
+      "continent": "EU",
+      "price": 54900,
+      "price_currency": "EUR",
+      "odometer": 45000,
+      "odometer_unit": "km"
+    }
+  ]
 }

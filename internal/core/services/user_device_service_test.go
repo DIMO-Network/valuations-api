@@ -230,14 +230,14 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
 	// mileage comes from request metadata, but it is also sometimes returned by payload
-	assert.Equal(s.T(), 30137, valuations.ValuationSets[0].Mileage)
-	assert.Equal(s.T(), 30137, valuations.ValuationSets[0].Odometer)
+	assert.Equal(s.T(), 74926, valuations.ValuationSets[0].Mileage)
+	assert.Equal(s.T(), 74926, valuations.ValuationSets[0].Odometer)
 	assert.Equal(s.T(), "km", valuations.ValuationSets[0].OdometerUnit)
 	assert.Equal(s.T(), "EUR", valuations.ValuationSets[0].Currency)
 
-	assert.Equal(s.T(), 44800, valuations.ValuationSets[0].TradeIn)
-	assert.Equal(s.T(), 55200, valuations.ValuationSets[0].Retail)
-	assert.Equal(s.T(), 51440, valuations.ValuationSets[0].UserDisplayPrice)
+	assert.Equal(s.T(), 27900, valuations.ValuationSets[0].TradeIn)
+	assert.Equal(s.T(), 35000, valuations.ValuationSets[0].Retail)
+	assert.Equal(s.T(), 32115, valuations.ValuationSets[0].UserDisplayPrice)
 }
 
 // *** Instant Offers (USA only) *** //
