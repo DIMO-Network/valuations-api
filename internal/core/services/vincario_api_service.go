@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -46,17 +47,20 @@ func (va *vincarioAPIService) GetMarketValuation(vin string) (*VincarioMarketVal
 	if err != nil {
 		return nil, err
 	}
-
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	// decode JSON from response body
 	var data VincarioMarketValueResponse
-	err = json.NewDecoder(resp.Body).Decode(&data)
+	err = json.Unmarshal(bodyBytes, &data)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if data.MarketPrice.Europe.PriceAvg == 0 && data.MarketPrice.NorthAmerica.PriceAvg == 0 {
-		return nil, fmt.Errorf("invalid valuation with 0 value returned - %+v", data)
+		return nil, fmt.Errorf("invalid valuation with 0 value returned - %s", string(bodyBytes))
 	}
 
 	return &data, nil
@@ -84,6 +88,7 @@ type VincarioMarketValueResponse struct {
 		APIVehicleMarketValue int `json:"API Vehicle Market Value"`
 		APIOEMVINLookup       int `json:"API OEM VIN Lookup"`
 	} `json:"balance"`
+	// nolint
 	Vehicle struct {
 		VehicleId int    `json:"vehicle_id"`
 		Make      string `json:"make"`
