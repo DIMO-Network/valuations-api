@@ -66,7 +66,7 @@ podDisruptionBudget:
   minAvailable: 1
 jobs:
   - name: batch-valuations
-    enabled: true
+    enabled: false
     schedule: 0 0 * * 0
     args:
       - '-c'
