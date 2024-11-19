@@ -140,7 +140,7 @@ definitions:
 info:
   contact: {}
   description: API to get latest valuation for a given connected vehicle belonging
-    to user
+    to user. Tokens must be privilege tokens.
   title: DIMO Vehicle Valuations API
   version: "1.0"
 paths:

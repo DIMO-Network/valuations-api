@@ -56,7 +56,22 @@ fmt:
 	@go mod tidy
 
 lint:
-	@go vet $(GO_FLAGS) ./...
+	@golangci-lint run
+
+gen-proto:
+	@protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pkg/grpc/*.proto
+
+gen-swag:
+	@swag init -g cmd/valuations-api/main.go --parseDependency --parseInternal
+
+add-migration:
+	goose -dir internal/infrastructure/db/migrations create rename_me sql
+
+migrate:
+	@go run ./cmd/valuations-api migrate
+
+sqlboiler:
+	@sqlboiler psql --no-tests --wipe
 
 test: $(APPS)
 	@go test $(GO_FLAGS) -timeout 3m -race ./...

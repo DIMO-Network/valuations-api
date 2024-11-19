@@ -20,6 +20,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+const (
+	userID = "user123123"
+)
+
 type VehiclesControllerTestSuite struct {
 	suite.Suite
 	controller           *VehiclesController

@@ -17,7 +17,7 @@ import (
 )
 
 // @title                       DIMO Vehicle Valuations API
-// @description 				API to get latest valuation for a given connected vehicle belonging to user
+// @description 				API to get latest valuation for a given connected vehicle belonging to user. Tokens must be privilege tokens.
 // @version                     1.0
 // @securityDefinitions.apikey  BearerAuth
 // @in                          header
@@ -60,8 +60,6 @@ func main() {
 	defer devicesConn.Close()
 	deviceDataSvc, devicedataConn := deps.getDeviceDataService()
 	defer devicedataConn.Close()
-	usersClient, usersConn := deps.getUsersClient(logger, settings.UsersGRPCAddr)
-	defer usersConn.Close()
 
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
@@ -77,7 +75,7 @@ func main() {
 
 	// Run API
 	if len(os.Args) == 1 {
-		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc, usersClient)
+		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc)
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

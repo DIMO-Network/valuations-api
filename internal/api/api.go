@@ -14,9 +14,6 @@ import (
 	"github.com/burdiyan/kafkautil"
 	"github.com/lovoo/goka"
 
-	grpc2 "github.com/DIMO-Network/users-api/pkg/grpc"
-	"github.com/DIMO-Network/valuations-api/internal/middleware/owner"
-
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -48,7 +45,7 @@ import (
 )
 
 func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService,
-	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService, usersClient grpc2.UserServiceClient) {
+	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
@@ -59,7 +56,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 
 	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc, userDeviceSvc)
 	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, usersClient, drivlySvc, vincarioSvc)
+	app := startWebAPI(logger, settings, userDeviceSvc, drivlySvc, vincarioSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -144,7 +141,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 }
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService,
-	usersClient grpc2.UserServiceClient, drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
+	drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())
@@ -165,17 +162,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	valuationsController := controllers.NewValuationsController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
 	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
 
 	// secured paths
-	jwtAuth := jwtware.New(jwtware.Config{
-		JWKSetURLs: []string{settings.JwtKeySetURL},
-		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
-			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
-		},
-	})
-
 	privilegeAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
 		ErrorHandler: func(_ *fiber.Ctx, _ error) error {

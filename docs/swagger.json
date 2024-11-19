@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API to get latest valuation for a given connected vehicle belonging to user",
+        "description": "API to get latest valuation for a given connected vehicle belonging to user. Tokens must be privilege tokens.",
         "title": "DIMO Vehicle Valuations API",
         "contact": {},
         "version": "1.0"

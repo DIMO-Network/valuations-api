@@ -1,7 +1,6 @@
 package main
 
 import (
-	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -55,21 +54,4 @@ func (dc *dependencyContainer) getDeviceDataService() (services.UserDeviceDataAP
 	}
 	dc.deviceDataSvc = services.NewUserDeviceDataAPIService(deviceDataConn)
 	return dc.deviceDataSvc, deviceDataConn
-}
-
-// todo deprecated remove once instant offers validated working ok
-//func (dc *dependencyContainer) getNATSService() *services.NATSService {
-//	service, err := services.NewNATSService(dc.settings, dc.logger)
-//	if err != nil {
-//		dc.logger.Fatal().Err(err).Msg("failed to connect to NATS server")
-//	}
-//	return service
-//}
-
-func (dc *dependencyContainer) getUsersClient(logger zerolog.Logger, usersAPIGRPCAddr string) (pb.UserServiceClient, *grpc.ClientConn) {
-	usersConn, err := grpc.Dial(usersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", usersAPIGRPCAddr)
-	}
-	return pb.NewUserServiceClient(usersConn), usersConn
 }
