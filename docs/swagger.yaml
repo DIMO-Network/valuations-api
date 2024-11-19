@@ -144,68 +144,6 @@ info:
   title: DIMO Vehicle Valuations API
   version: "1.0"
 paths:
-  /v1/user/devices/{userDeviceID}/instant-offer:
-    get:
-      description: |-
-        makes a request for an instant offer for a particular user device. Simply returns success if able to create job.
-        You will need to query the offers endpoint to see if a new offer showed up. Job can take about a minute to complete.
-      parameters:
-      - description: userDeviceID for vehicle to get offers
-        in: path
-        name: userDeviceID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      tags:
-      - offers
-  /v1/user/devices/{userDeviceID}/offers:
-    get:
-      description: gets any existing offers for a particular user device. You must
-        call instant-offer endpoint first to pull.
-      parameters:
-      - description: userDeviceID for vehicle to get offers
-        in: path
-        name: userDeviceID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceOffer'
-      security:
-      - BearerAuth: []
-      tags:
-      - offers
-  /v1/user/devices/{userDeviceID}/valuations:
-    get:
-      description: gets valuations for a particular user device. Includes only price
-        valuations, not offers. only gets the latest valuation.
-      parameters:
-      - description: userDeviceID for vehicle to get offers
-        in: path
-        name: userDeviceID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_DIMO-Network_valuations-api_internal_core_models.DeviceValuation'
-      security:
-      - BearerAuth: []
-      tags:
-      - valuations
   /v2/vehicles/{tokenId}/instant-offer:
     post:
       description: |-

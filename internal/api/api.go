@@ -187,16 +187,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	})
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
-	v1Auth := app.Group("/v1", jwtAuth)
-	// so that we can correctly lookup the userDeviceId owner as multiple user records could point to same user as defined by a wallet addr
-	deviceMw := owner.New(usersClient, userDeviceSvc, &logger)
-
-	// deprecate once mobile app switches to /v2 below, notice difference btw valuations and vehicles controller name
-	udOwner := v1Auth.Group("/user/devices/:userDeviceID", deviceMw)
-	udOwner.Get("/valuations", valuationsController.GetValuations)
-	udOwner.Get("/offers", valuationsController.GetOffers)
-	udOwner.Get("/instant-offer", valuationsController.GetInstantOffer)
-
 	vOwner := app.Group("/v2/vehicles/:tokenId", privilegeAuth)
 	vOwner.Get("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetValuations)
 	vOwner.Get("/offers", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetOffers)
