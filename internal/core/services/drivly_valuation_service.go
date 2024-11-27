@@ -96,7 +96,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		// just warn if can't get data
 		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
-	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Year), time.Now().Year())
 	if deviceMileage == 0 {
 		localLog.Warn().Msg("vehicle mileage found was 0 for valuation pull request")
 	}
@@ -212,7 +212,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		// just warn if can't get data
 		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
 	}
-	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Type.Year), time.Now().Year())
+	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Year), time.Now().Year())
 
 	if deviceMileage == 0 {
 		localLog.Warn().Msg("vehicle mileage found was 0")
