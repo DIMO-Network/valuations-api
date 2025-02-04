@@ -8,7 +8,7 @@ require (
 	github.com/DIMO-Network/device-data-api v0.9.12
 	github.com/DIMO-Network/device-definitions-api v1.2.68
 	github.com/DIMO-Network/devices-api v1.24.7
-	github.com/DIMO-Network/shared v0.12.1
+	github.com/DIMO-Network/shared v0.12.9
 	github.com/DIMO-Network/users-api v0.7.1
 	github.com/IBM/sarama v1.43.3
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b
@@ -125,6 +125,7 @@ require (
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241021214115-324edc3d5d38 // indirect
