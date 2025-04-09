@@ -154,3 +154,45 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 		"message": "instant offer request completed: " + status,
 	})
 }
+
+// RequestValuationOnly godoc
+// @Description request valuation only from drivly or vincario (if drivly fails)
+// @Tags        valuations
+// @Produce     json
+// @Param 		tokenId path string true "tokenId for vehicle to get valuation"
+// @Success     200
+// @Security    BearerAuth
+// @Router      /v2/vehicles/{tokenId}/valuation [post]
+func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
+	tidStr := c.Params("tokenId")
+	tokenID, ok := new(big.Int).SetString(tidStr, 10)
+	if !ok {
+		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse token id.")
+	}
+
+	localLog := vc.log.With().Str("token_id", tidStr).Str("path", c.Path()).Logger()
+
+	ud, err := vc.userDeviceService.GetUserDeviceByTokenID(c.Context(), tokenID)
+	if err != nil {
+		localLog.Err(err).Msg("failed to get user device")
+		return err
+	}
+
+	var valuationErr error
+	var status core.DataPullStatusEnum
+	// this used to be async with nats, but trying just making it syncronous since doesn't really take that long, more now that vroom disabled.
+	status, valuationErr = vc.drivlyValuationSvc.PullValuation(c.Context(), ud.Id, tokenID.Uint64(), ud.DeviceDefinitionId, *ud.Vin)
+	if valuationErr != nil {
+		localLog.Err(valuationErr).Msg("failed to get valuation from drivly, retrying with vincario")
+		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), ud.Id, tokenID.Uint64(), ud.DeviceDefinitionId, *ud.Vin)
+	}
+	if valuationErr != nil {
+		localLog.Err(valuationErr).Msg("failed to get valuation from vincario")
+		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
+	}
+	localLog.Info().Msgf("succesfully requested offer with status %s", status)
+
+	return c.JSON(fiber.Map{
+		"message": "valuation request completed: " + status,
+	})
+}

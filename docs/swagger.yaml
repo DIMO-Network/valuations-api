@@ -185,6 +185,24 @@ paths:
       - BearerAuth: []
       tags:
       - offers
+  /v2/vehicles/{tokenId}/valuation:
+    post:
+      description: request valuation only from drivly or vincario (if drivly fails)
+      parameters:
+      - description: tokenId for vehicle to get valuation
+        in: path
+        name: tokenId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      tags:
+      - valuations
   /v2/vehicles/{tokenId}/valuations:
     get:
       description: gets valuations for a particular user device. Includes only price

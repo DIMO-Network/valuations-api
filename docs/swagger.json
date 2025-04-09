@@ -70,6 +70,36 @@
                 }
             }
         },
+        "/v2/vehicles/{tokenId}/valuation": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "request valuation only from drivly or vincario (if drivly fails)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "valuations"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "tokenId for vehicle to get valuation",
+                        "name": "tokenId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/v2/vehicles/{tokenId}/valuations": {
             "get": {
                 "security": [
