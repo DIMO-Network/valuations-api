@@ -179,8 +179,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	vOwner := app.Group("/v2/vehicles/:tokenId", privilegeAuth)
 	vOwner.Get("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetValuations)
 	vOwner.Get("/offers", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetOffers)
+	// request an offer of valuation
 	vOwner.Post("/instant-offer", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.RequestInstantOffer)
 	vOwner.Post("/valuation", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.RequestValuationOnly)
+	// same as above but it causes confusion so
+	vOwner.Post("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.RequestValuationOnly)
 
 	logger.Info().Msg("HTTP web server started on port " + settings.Port)
 	// Start Server from a different go routine
