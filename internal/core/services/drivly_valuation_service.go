@@ -57,12 +57,13 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 
 // PullValuation performs a data pull for a vehicle valuation. It retrieves pricing and
 // other relevant data for a given VIN. Not necessary for the userDevice to exist, VIN is what matters
-func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
+	// todo switch to use identity-api
 	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err

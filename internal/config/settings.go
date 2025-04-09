@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/DIMO-Network/shared/db"
+	"net/url"
 )
 
 type Settings struct {
@@ -39,6 +40,8 @@ type Settings struct {
 	// EventsTopic kafka topic to get onchain events emmitted by devices-api
 	EventsTopic  string `yaml:"EVENTS_TOPIC"`
 	KafkaBrokers string `yaml:"KAFKA_BROKERS"`
+
+	IdentityAPIURL url.URL `yaml:"IDENTITY_API_URL"`
 }
 
 func (s *Settings) IsProduction() bool {

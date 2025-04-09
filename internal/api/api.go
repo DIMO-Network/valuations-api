@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"net"
 	"os"
 	"os/signal"
@@ -44,12 +45,12 @@ import (
 	_ "github.com/DIMO-Network/valuations-api/docs"
 )
 
-func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, ddSvc services.DeviceDefinitionsAPIService,
-	userDeviceSvc services.UserDeviceAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
+func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, identity gateways.IdentityAPI,
+	userDeviceSvc services.UserDeviceAPIService) {
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
-	startEventsConsumer(settings, logger, pdb, userDeviceSvc, ddSvc, deviceDataSvc)
+	startEventsConsumer(settings, logger, pdb, userDeviceSvc, identity, deviceDataSvc)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
@@ -142,6 +143,7 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService,
 	drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return helpers.ErrorHandler(c, err, &logger, settings.IsProduction())

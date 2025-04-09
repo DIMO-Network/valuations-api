@@ -53,6 +53,7 @@ env:
   VEHICLE_NFT_ADDRESS: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
   EVENTS_TOPIC: topic.event
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
+  IDENTITY_API_URL: https://identity-api.dev.dimo.zone/query
 service:
   type: ClusterIP
   ports:
