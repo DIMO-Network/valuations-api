@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/valuations-api
   pullPolicy: IfNotPresent
-  tag: 596e2bf
+  tag: 56f837b
 env:
   ENVIRONMENT: prod
   PORT: '8080'
