@@ -4,16 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
-	"github.com/tidwall/gjson"
-
 	"time"
 
-	pb "github.com/DIMO-Network/device-data-api/pkg/grpc"
-	pbdeviceapi "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
@@ -29,46 +26,46 @@ import (
 //go:generate mockgen -source drivly_valuation_service.go -destination mocks/drivly_valuation_service_mock.go
 
 type DrivlyValuationService interface {
-	PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
-	PullOffer(ctx context.Context, userDeviceID string, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
-	dbs       func() *db.ReaderWriter
-	ddSvc     DeviceDefinitionsAPIService
-	drivlySvc DrivlyAPIService
-	udSvc     UserDeviceAPIService
-	geoSvc    GoogleGeoAPIService
-	uddSvc    UserDeviceDataAPIService
-	log       *zerolog.Logger
+	dbs          func() *db.ReaderWriter
+	drivlySvc    DrivlyAPIService
+	udSvc        UserDeviceAPIService
+	geoSvc       GoogleGeoAPIService
+	identityAPI  gateways.IdentityAPI
+	telemetryAPI gateways.TelemetryAPI
+	log          *zerolog.Logger
 }
 
-func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, ddSvc DeviceDefinitionsAPIService, uddSvc UserDeviceDataAPIService, udSvc UserDeviceAPIService) DrivlyValuationService {
+func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, udSvc UserDeviceAPIService) DrivlyValuationService {
 	return &drivlyValuationService{
-		dbs:       DBS,
-		log:       log,
-		drivlySvc: NewDrivlyAPIService(settings, DBS),
-		ddSvc:     ddSvc,
-		geoSvc:    NewGoogleGeoAPIService(settings),
-		uddSvc:    uddSvc,
-		udSvc:     udSvc,
+		dbs:          DBS,
+		log:          log,
+		drivlySvc:    NewDrivlyAPIService(settings, DBS),
+		geoSvc:       NewGoogleGeoAPIService(settings),
+		udSvc:        udSvc,
+		identityAPI:  gateways.NewIdentityAPIService(log, settings, nil),
+		telemetryAPI: gateways.NewTelemetryAPI(log, settings, nil),
 	}
 }
 
 // PullValuation performs a data pull for a vehicle valuation. It retrieves pricing and
 // other relevant data for a given VIN. Not necessary for the userDevice to exist, VIN is what matters
-func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
 	// todo switch to use identity-api
-	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
+	deviceDef, err := d.identityAPI.GetDefinition(definitionID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
-	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", deviceDefinitionID).Str("user_device_id", userDeviceID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("definition_id", definitionID).Uint64("token_id", tokenID).Logger()
 
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
@@ -84,20 +81,19 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 
 	// by this point we know we might need to insert drivly valuation
 	valuation := &models.Valuation{
-		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(deviceDef.DeviceDefinitionId),
-		Vin:                vin,
-		UserDeviceID:       null.StringFrom(userDeviceID),
-		TokenID:            types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
+		ID:           ksuid.New().String(),
+		Vin:          vin,
+		TokenID:      types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
+		DefinitionID: null.StringFrom(definitionID), // todo make this not nullable
 	}
 
 	// get mileage for the drivly request
-	userDeviceData, err := d.uddSvc.GetVehicleRawData(ctx, userDeviceID)
+	signals, err := d.telemetryAPI.GetLatestSignals(tokenID)
 	if err != nil {
-		// just warn if can't get data
-		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
+		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get telemetry latest signals for token %d", tokenID)
 	}
-	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Year), time.Now().Year())
+
+	deviceMileage := getDeviceMileage(signals, deviceDef.Year, time.Now().Year())
 	if deviceMileage == 0 {
 		localLog.Warn().Msg("vehicle mileage found was 0 for valuation pull request")
 	}
@@ -106,65 +102,39 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 		Mileage: &deviceMileage,
 	}
 	// handle postal code information to send to drivly and store for future use
-	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	gloc, err := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
 	if err != nil {
-		localLog.Err(err).Msg("failed to get user device")
+		d.log.Warn().Err(err).Msgf("failed to get geodecoded location for token %d", tokenID)
 	}
-
-	if userDevice != nil && userDevice.PostalCode == "" && userDeviceData != nil && len(userDeviceData.Items) > 0 {
-		// need to geodecode the postal code
-		lat := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "latitude.value").Float()
-		long := gjson.GetBytes(userDeviceData.Items[0].SignalsJsonData, "longitude.value").Float()
-		localLog.Info().Msgf("lat long found: %f, %f", lat, long)
-		if lat > 0 && long > 0 {
-			gl, err := d.geoSvc.GeoDecodeLatLong(lat, long)
+	if gloc != nil {
+		reqData.ZipCode = &gloc.PostalCode.String
+	} else {
+		if signals != nil && signals.CurrentLocationLatitude.Value > 0 && signals.CurrentLocationLongitude.Value > 0 {
+			// decode the lat long if we have it
+			gl, err := d.geoSvc.GeoDecodeLatLong(signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
 			if err != nil {
-				localLog.Err(err).Msgf("failed to GeoDecode lat long %f, %f", lat, long)
-			}
-			if gl != nil {
-				userDevice.PostalCode = gl.PostalCode
-				// update UD, ignore if fails doesn't matter
-				err := d.udSvc.UpdateUserDeviceMetadata(ctx, &pbdeviceapi.UpdateUserDeviceMetadataRequest{
-					UserDeviceId:        userDeviceID,
-					PostalCode:          &gl.PostalCode,
-					GeoDecodedCountry:   &gl.Country,
-					GeoDecodedStateProv: &gl.AdminAreaLevel1,
-				})
-				if err != nil {
-					localLog.Err(err).Msgf("failed to update user device metadata for postal code")
+				d.log.Warn().Err(err).Msgf("failed to GeoDecode lat long %f, %f", signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
+			} else {
+				reqData.ZipCode = &gl.PostalCode
+				// persist the info for future
+				gloc = &models.GeodecodedLocation{
+					TokenID:    int64(tokenID),
+					PostalCode: null.StringFrom(gl.PostalCode),
+					Country:    null.StringFrom(gl.Country),
 				}
-
-				localLog.Info().Msgf("GeoDecoded a lat long: %+v", gl)
+				err = gloc.Insert(ctx, d.dbs().Writer, boil.Infer())
+				if err != nil {
+					d.log.Err(err).Msgf("failed to insert geodecoded location for token %d", tokenID)
+				}
 			}
 		}
 	}
-
-	if userDevice != nil && userDevice.PostalCode != "" {
-		reqData.ZipCode = &userDevice.PostalCode
-	}
+	// add the request data to the valution record
 	_ = valuation.RequestMetadata.Marshal(reqData)
-
+	// cal drivly for pricing
 	pricing, err := d.drivlySvc.GetVINPricing(vin, &reqData)
 	if err == nil {
 		_ = valuation.DrivlyPricingMetadata.Marshal(pricing)
-	}
-
-	// check on edmunds data so we can get the style id
-	edmundsExists, _ := models.Valuations(models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
-		models.ValuationWhere.EdmundsMetadata.IsNotNull()).Exists(ctx, d.dbs().Reader)
-	if !edmundsExists {
-		// extra optional data that only needs to be pulled once.
-		edmunds, err := d.drivlySvc.GetEdmundsByVIN(vin) // this is source data that will only be available after pulling vin + pricing
-		if err == nil {
-			_ = valuation.EdmundsMetadata.Marshal(edmunds)
-		}
-		// fill in edmunds style_id in our user_device if it exists and not already set. None of these seen as bad errors so just logs
-		if edmunds != nil && userDevice != nil && userDevice.DeviceStyleId == nil {
-			d.setUserDeviceStyleFromEdmunds(ctx, edmunds, userDevice)
-			localLog.Info().Msgf("set device_style_id for userDevice id %s", userDeviceID)
-		} else {
-			localLog.Warn().Msgf("could not set edmunds style id. edmunds data exists: %v", edmunds != nil)
-		}
 	}
 
 	err = valuation.Insert(ctx, d.dbs().Writer, boil.Infer())
@@ -177,9 +147,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, userDeviceID
 	return core.PulledValuationDrivlyStatus, nil
 }
 
-func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID string, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
 	// make sure userdevice exists
-	userDevice, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	vehicle, err := d.identityAPI.GetVehicle(tokenID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
@@ -188,7 +158,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
-	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", userDevice.DeviceDefinitionId).Str("user_device_id", userDeviceID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", vehicle.Definition.Id).Uint64("token_id", tokenID).Logger()
 
 	existingOfferData, _ := models.Valuations(
 		models.ValuationWhere.Vin.EQ(vin),
@@ -202,18 +172,18 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 		}
 	}
 	// future: pull by tokenID from identity-api
-	deviceDef, err := d.ddSvc.GetDeviceDefinitionByID(ctx, userDevice.DeviceDefinitionId)
+	deviceDef, err := d.identityAPI.GetDefinition(vehicle.Definition.Id)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
 
 	// get mileage for the drivly request
-	userDeviceData, err := d.uddSvc.GetVehicleRawData(ctx, userDeviceID)
+	signals, err := d.telemetryAPI.GetLatestSignals(tokenID)
 	if err != nil {
 		// just warn if can't get data
-		localLog.Warn().Err(err).Msgf("could not find any user device data to obtain mileage or location - continuing without")
+		localLog.Warn().Err(err).Msgf("could not find any telemtry data to obtain mileage or location - continuing without")
 	}
-	deviceMileage := getDeviceMileage(userDeviceData, int(deviceDef.Year), time.Now().Year())
+	deviceMileage := getDeviceMileage(signals, deviceDef.Year, time.Now().Year())
 
 	if deviceMileage == 0 {
 		localLog.Warn().Msg("vehicle mileage found was 0")
@@ -221,7 +191,10 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 
 	params := ValuationRequestData{
 		Mileage: &deviceMileage,
-		ZipCode: &userDevice.PostalCode,
+	}
+	gloc, _ := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
+	if gloc != nil {
+		params.ZipCode = &gloc.PostalCode.String
 	}
 
 	offer, err := d.drivlySvc.GetOffersByVIN(vin, &params)
@@ -234,9 +207,8 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 	// insert new offer record
 	newOffer := &models.Valuation{
 		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(userDevice.DeviceDefinitionId),
+		DeviceDefinitionID: null.StringFrom(vehicle.Definition.Id),
 		Vin:                vin,
-		UserDeviceID:       null.StringFrom(userDeviceID),
 		TokenID:            types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
 	}
 	pj, err := json.Marshal(params)
@@ -255,20 +227,12 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, userDeviceID str
 
 const EstMilesPerYear = 12000.0
 
-func getDeviceMileage(userDeviceData *pb.RawDeviceDataResponse, modelYear int, currentYear int) (mileage float64) {
-
-	if userDeviceData != nil {
-		// get the highest odometer found
-		odoKm := float64(0)
-		for _, item := range userDeviceData.Items {
-			odo := gjson.GetBytes(item.SignalsJsonData, "odometer.value").Float()
-			if odo > odoKm {
-				odoKm = odo
-			}
-		}
+func getDeviceMileage(signals *gateways.SignalsLatest, modelYear int, currentYear int) (mileage float64) {
+	if signals != nil {
+		odoKm := signals.PowertrainTransmissionTravelledDistance.Value
 		if odoKm > 0 {
 			return odoKm * 0.621271
-		}
+		} // convert to miles
 	}
 	// if get here means need to just estimate
 	deviceMileage := float64(0)
@@ -286,30 +250,4 @@ func getDeviceMileage(userDeviceData *pb.RawDeviceDataResponse, modelYear int, c
 	}
 
 	return deviceMileage
-}
-
-func (d *drivlyValuationService) setUserDeviceStyleFromEdmunds(ctx context.Context, edmunds map[string]interface{}, ud *pbdeviceapi.UserDevice) {
-	edmundsJSON, err := json.Marshal(edmunds)
-	if err != nil {
-		d.log.Err(err).Msg("could not marshal edmunds response to json")
-		return
-	}
-	styleIDResult := gjson.GetBytes(edmundsJSON, "edmundsStyle.data.style.id")
-	styleID := styleIDResult.String()
-	if styleIDResult.Exists() && len(styleID) > 0 {
-
-		deviceStyle, err := d.ddSvc.GetDeviceStyleByExternalID(ctx, styleID)
-
-		if err != nil {
-			d.log.Err(err).Msgf("unable to find device_style for edmunds style_id %s", styleID)
-			return
-		}
-		//TODO: edu
-		ud.DeviceStyleId = &deviceStyle.Id // set foreign key
-		//_, err = ud.Update(ctx, d.dbs().Writer, boil.Whitelist("updated_at", "device_style_id"))
-		//if err != nil {
-		//	d.log.Err(err).Msgf("unable to update user_device_id %s with styleID %s", ud.Id, deviceStyle.Id)
-		//	return
-		//}
-	}
 }

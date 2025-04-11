@@ -31,15 +31,14 @@ type vehicleMintValuationIngest struct {
 
 func NewVehicleMintValuationIngest(dbs func() *db.ReaderWriter, logger zerolog.Logger, settings *config.Settings,
 	userDeviceService UserDeviceAPIService,
-	ddSvc DeviceDefinitionsAPIService,
-	uddSvc UserDeviceDataAPIService,
+	ddSvc DeviceDefinitionsAPIService
 ) VehicleMintValuationIngest {
 	return &vehicleMintValuationIngest{
 		DBS:                      dbs,
 		logger:                   logger,
 		userDeviceService:        userDeviceService,
 		vincarioValuationService: NewVincarioValuationService(dbs, &logger, settings, userDeviceService),
-		drivlyValuationService:   NewDrivlyValuationService(dbs, &logger, settings, ddSvc, uddSvc, userDeviceService),
+		drivlyValuationService:   NewDrivlyValuationService(dbs, &logger, settings, ddSvc, userDeviceService),
 	}
 }
 

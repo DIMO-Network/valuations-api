@@ -3,6 +3,7 @@ package gateways
 import (
 	"encoding/json"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/shared"
@@ -19,7 +20,7 @@ type telemetryAPIService struct {
 
 //go:generate mockgen -source telemetry_api.go -destination mocks/telemetry_api_mock.go -package mocks
 type TelemetryAPI interface {
-	GetLatestSignals(tokenID string) (*SignalsLatest, error)
+	GetLatestSignals(tokenID uint64) (*SignalsLatest, error)
 }
 
 func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings, httpClient shared.HTTPClientWrapper) TelemetryAPI {
@@ -36,15 +37,24 @@ func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings, httpClie
 	}
 }
 
-func (i *telemetryAPIService) GetLatestSignals(tokenID string) (*SignalsLatest, error) {
+// GetLatestSignals odometer
+func (i *telemetryAPIService) GetLatestSignals(tokenID uint64) (*SignalsLatest, error) {
 	query := `{
-  signalsLatest(tokenId:` + tokenID + `){
-    powertrainTransmissionTravelledDistance {
-      timestamp
-      value
-    }
-  }
-	}`
+	  signalsLatest(tokenId:` + strconv.FormatUint(tokenID, 10) + `){
+	    powertrainTransmissionTravelledDistance {
+	      timestamp
+	      value
+	    }
+		currentLocationLatitude {
+          timestamp
+		  value
+    	}
+		currentLocationLongitude {
+      		timestamp
+      		value
+		}
+	  }
+		}`
 	var wrapper struct {
 		Data struct {
 			SignalsLatest SignalsLatest `json:"signalsLatest"`
@@ -102,4 +112,12 @@ type SignalsLatest struct {
 		Timestamp time.Time `json:"timestamp"`
 		Value     float64   `json:"value"`
 	} `json:"powertrainTransmissionTravelledDistance"`
+	CurrentLocationLatitude struct {
+		Timestamp time.Time `json:"timestamp"`
+		Value     float64   `json:"value"`
+	} `json:"currentLocationLatitude"`
+	CurrentLocationLongitude struct {
+		Timestamp time.Time `json:"timestamp"`
+		Value     float64   `json:"value"`
+	} `json:"currentLocationLongitude"`
 }

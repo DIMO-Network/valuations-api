@@ -3,6 +3,7 @@ package gateways
 import (
 	"encoding/json"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/shared"
@@ -24,6 +25,7 @@ type identityAPIService struct {
 type IdentityAPI interface {
 	GetManufacturer(slug string) (*Manufacturer, error)
 	GetDefinition(definitionID string) (*DeviceDefinition, error)
+	GetVehicle(tokenID uint64) (*Vehicle, error)
 }
 
 // NewIdentityAPIService creates a new instance of IdentityAPI, initializing it with the provided logger, settings, and HTTP client.
@@ -40,6 +42,34 @@ func NewIdentityAPIService(logger *zerolog.Logger, settings *config.Settings, ht
 		logger:         *logger,
 		identityAPIURL: settings.IdentityAPIURL.String(),
 	}
+}
+
+func (i *identityAPIService) GetVehicle(tokenID uint64) (*Vehicle, error) {
+	query := `{
+  vehicle(tokenId: ` + strconv.FormatUint(tokenID, 10) + `) {
+    id
+    definition{
+      id
+      make
+      model
+      year
+    }
+    owner 
+	}
+  }`
+	var wrapper struct {
+		Data struct {
+			Vehicle Vehicle `json:"vehicle"`
+		} `json:"data"`
+	}
+	err := i.fetchWithQuery(query, &wrapper)
+	if err != nil {
+		return nil, err
+	}
+	if wrapper.Data.Vehicle.Id == "" {
+		return nil, errors.Wrapf(ErrNotFound, "identity-api did not find vehicle with tokenId: %d", tokenID)
+	}
+	return &wrapper.Data.Vehicle, nil
 }
 
 func (i *identityAPIService) GetDefinition(definitionID string) (*DeviceDefinition, error) {
@@ -156,4 +186,15 @@ type DeviceDefinition struct {
 		Name  string `json:"name"`
 		Value string `json:"value"`
 	} `json:"attributes"`
+}
+
+type Vehicle struct {
+	Id         string `json:"id"`
+	Definition struct {
+		Id    string `json:"id"`
+		Make  string `json:"make"`
+		Model string `json:"model"`
+		Year  int    `json:"year"`
+	} `json:"definition"`
+	Owner string `json:"owner"`
 }
