@@ -19,7 +19,7 @@ type telemetryAPIService struct {
 
 //go:generate mockgen -source telemetry_api.go -destination mocks/telemetry_api_mock.go -package mocks
 type TelemetryAPI interface {
-	GetLatestSignals(name string) (*Manufacturer, error)
+	GetLatestSignals(tokenID string) (*SignalsLatest, error)
 }
 
 func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings, httpClient shared.HTTPClientWrapper) TelemetryAPI {
@@ -36,28 +36,28 @@ func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings, httpClie
 	}
 }
 
-func (i *telemetryAPIService) GetLatestSignals(name string) (*Manufacturer, error) {
+func (i *telemetryAPIService) GetLatestSignals(tokenID string) (*SignalsLatest, error) {
 	query := `{
-  manufacturer(by: {name: "` + name + `"}) {
-    	tokenId
-    	name
-    	tableId
-    	owner
-  	  }
+  signalsLatest(tokenId:` + tokenID + `){
+    powertrainTransmissionTravelledDistance {
+      timestamp
+      value
+    }
+  }
 	}`
 	var wrapper struct {
 		Data struct {
-			Manufacturer Manufacturer `json:"manufacturer"`
+			SignalsLatest SignalsLatest `json:"signalsLatest"`
 		} `json:"data"`
 	}
 	err := i.fetchWithQuery(query, &wrapper)
 	if err != nil {
 		return nil, err
 	}
-	if wrapper.Data.Manufacturer.Name == "" {
-		return nil, errors.Wrapf(ErrNotFound, "identity-api did not find manufacturer with name: %s", name)
+	if wrapper.Data.SignalsLatest.PowertrainTransmissionTravelledDistance.Value == 0 {
+		return nil, errors.Wrapf(ErrNotFound, "no odometer for tokenId: %s", tokenID)
 	}
-	return &wrapper.Data.Manufacturer, nil
+	return &wrapper.Data.SignalsLatest, nil
 }
 
 func (i *telemetryAPIService) fetchWithQuery(query string, result interface{}) error {
@@ -95,4 +95,11 @@ func (i *telemetryAPIService) fetchWithQuery(query string, result interface{}) e
 	}
 
 	return nil
+}
+
+type SignalsLatest struct {
+	PowertrainTransmissionTravelledDistance struct {
+		Timestamp time.Time `json:"timestamp"`
+		Value     float64   `json:"value"`
+	} `json:"powertrainTransmissionTravelledDistance"`
 }

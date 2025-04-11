@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"github.com/DIMO-Network/valuations-api/internal/app"
+	"github.com/gofiber/fiber/v2"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"os"
 	"time"
@@ -11,7 +16,6 @@ import (
 	"github.com/google/subcommands"
 
 	"github.com/DIMO-Network/shared"
-	"github.com/DIMO-Network/valuations-api/internal/api"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/rs/zerolog"
 )
@@ -75,7 +79,7 @@ func main() {
 
 	// Run API
 	if len(os.Args) == 1 {
-		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc)
+		app.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc)
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))
