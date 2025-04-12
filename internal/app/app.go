@@ -55,7 +55,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
 
-	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, deviceDataSvc, userDeviceSvc)
+	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, userDeviceSvc)
 	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc)
 	app := startWebAPI(logger, settings, userDeviceSvc, drivlySvc, vincarioSvc)
 	// nolint

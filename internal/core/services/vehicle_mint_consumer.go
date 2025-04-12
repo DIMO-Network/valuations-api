@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"strings"
 	"time"
 
@@ -24,21 +25,23 @@ type VehicleMintValuationIngest interface {
 type vehicleMintValuationIngest struct {
 	DBS                      func() *db.ReaderWriter
 	logger                   zerolog.Logger
-	userDeviceService        UserDeviceAPIService
 	vincarioValuationService VincarioValuationService
 	drivlyValuationService   DrivlyValuationService
+	telemetryAPI             gateways.TelemetryAPI
+	identityAPI              gateways.IdentityAPI
 }
 
 func NewVehicleMintValuationIngest(dbs func() *db.ReaderWriter, logger zerolog.Logger, settings *config.Settings,
-	userDeviceService UserDeviceAPIService,
-	ddSvc DeviceDefinitionsAPIService
+	telemetryAPI gateways.TelemetryAPI,
+	identityAPI gateways.IdentityAPI,
 ) VehicleMintValuationIngest {
 	return &vehicleMintValuationIngest{
 		DBS:                      dbs,
 		logger:                   logger,
-		userDeviceService:        userDeviceService,
-		vincarioValuationService: NewVincarioValuationService(dbs, &logger, settings, userDeviceService),
-		drivlyValuationService:   NewDrivlyValuationService(dbs, &logger, settings, ddSvc, userDeviceService),
+		identityAPI:              identityAPI,
+		telemetryAPI:             telemetryAPI,
+		vincarioValuationService: NewVincarioValuationService(dbs, &logger, settings, identityAPI),
+		drivlyValuationService:   NewDrivlyValuationService(dbs, &logger, settings),
 	}
 }
 
@@ -68,14 +71,14 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		return
 	}
 
-	userDevice, err := i.userDeviceService.GetUserDevice(ctx.Context(), userDeviceID)
+	vehicle, err := i.identityAPI.GetVehicle(tokenID)
 	if err != nil {
-		localLog.Error().Msg("unable to find user device")
+		localLog.Error().Uint64("token_id", tokenID).Msg("unable to find vehicle")
 		return
 	}
 
-	localLog = localLog.With().Str("country", userDevice.CountryCode).Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Logger()
-	// todo: move tests over
+	localLog = localLog.With().Str("deviceDefinitionId", vehicle.Definition.Id).Logger()
+	// todo: refactor out thing that gets zipcode and country
 	// we currently have two vendors for valuations
 	if strings.Contains(NorthAmercanCountries, userDevice.CountryCode) {
 		status, err := i.drivlyValuationService.PullValuation(ctx.Context(), userDevice.Id, tokenID, userDevice.DeviceDefinitionId, vin)

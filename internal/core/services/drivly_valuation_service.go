@@ -33,20 +33,18 @@ type DrivlyValuationService interface {
 type drivlyValuationService struct {
 	dbs          func() *db.ReaderWriter
 	drivlySvc    DrivlyAPIService
-	udSvc        UserDeviceAPIService
 	geoSvc       GoogleGeoAPIService
 	identityAPI  gateways.IdentityAPI
 	telemetryAPI gateways.TelemetryAPI
 	log          *zerolog.Logger
 }
 
-func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, udSvc UserDeviceAPIService) DrivlyValuationService {
+func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings) DrivlyValuationService {
 	return &drivlyValuationService{
 		dbs:          DBS,
 		log:          log,
 		drivlySvc:    NewDrivlyAPIService(settings, DBS),
 		geoSvc:       NewGoogleGeoAPIService(settings),
-		udSvc:        udSvc,
 		identityAPI:  gateways.NewIdentityAPIService(log, settings, nil),
 		telemetryAPI: gateways.NewTelemetryAPI(log, settings, nil),
 	}
