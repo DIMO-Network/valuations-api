@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/DIMO-Network/valuations-api/internal/config"
 
-	"github.com/DIMO-Network/shared"
+	"github.com/DIMO-Network/shared/pkg/http"
 	"github.com/rs/zerolog"
 )
 
@@ -21,7 +21,7 @@ type VincarioAPIService interface {
 
 type vincarioAPIService struct {
 	settings      *config.Settings
-	httpClientVIN shared.HTTPClientWrapper
+	httpClientVIN http.ClientWrapper
 	log           *zerolog.Logger
 }
 
@@ -29,7 +29,7 @@ func NewVincarioAPIService(settings *config.Settings, log *zerolog.Logger) Vinca
 	if settings.VincarioAPIURL == "" || settings.VincarioAPISecret == "" {
 		panic("Vincario configuration not set")
 	}
-	hcwv, _ := shared.NewHTTPClientWrapper(settings.VincarioAPIURL, "", 10*time.Second, nil, false)
+	hcwv, _ := http.NewClientWrapper(settings.VincarioAPIURL, "", 10*time.Second, nil, false)
 
 	return &vincarioAPIService{
 		settings:      settings,

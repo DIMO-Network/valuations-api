@@ -8,7 +8,7 @@ require (
 	github.com/DIMO-Network/device-data-api v0.9.12
 	github.com/DIMO-Network/device-definitions-api v1.2.68
 	github.com/DIMO-Network/devices-api v1.24.7
-	github.com/DIMO-Network/shared v0.12.9
+	github.com/DIMO-Network/shared v1.0.0
 	github.com/DIMO-Network/users-api v0.7.1
 	github.com/IBM/sarama v1.43.3
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b

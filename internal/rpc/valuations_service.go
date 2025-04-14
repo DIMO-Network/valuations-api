@@ -112,15 +112,7 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 
 func (s *valuationsService) GetUserDeviceValuation(ctx context.Context, req *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
 
-	udi := req.UserDeviceId
-
-	ud, err := s.userDeviceService.GetUserDevice(ctx, udi)
-
-	if err != nil {
-		return nil, err
-	}
-
-	valuations, err := s.userDeviceService.GetUserDeviceValuations(ctx, udi, ud.CountryCode)
+	valuations, err := s.userDeviceService.GetUserDeviceValuations(ctx, req.TokenId)
 
 	if err != nil {
 		return nil, err

@@ -3,12 +3,12 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DIMO-Network/shared/pkg/http"
 	"io"
 	"net/url"
 	"time"
 
-	"github.com/DIMO-Network/shared"
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/pkg/errors"
 )
@@ -40,8 +40,8 @@ type ValuationRequestData struct {
 
 type drivlyAPIService struct {
 	Settings        *config.Settings
-	httpClientVIN   shared.HTTPClientWrapper
-	httpClientOffer shared.HTTPClientWrapper
+	httpClientVIN   http.ClientWrapper
+	httpClientOffer http.ClientWrapper
 	dbs             func() *db.ReaderWriter
 }
 
@@ -50,8 +50,8 @@ func NewDrivlyAPIService(settings *config.Settings, dbs func() *db.ReaderWriter)
 		panic("Drivly configuration not set")
 	}
 	h := map[string]string{"x-api-key": settings.DrivlyAPIKey}
-	hcwv, _ := shared.NewHTTPClientWrapper(settings.DrivlyVINAPIURL, "", 10*time.Second, h, true)
-	hcwo, _ := shared.NewHTTPClientWrapper(settings.DrivlyOfferAPIURL, "", 120*time.Second, h, true)
+	hcwv, _ := http.NewClientWrapper(settings.DrivlyVINAPIURL, "", 10*time.Second, h, true)
+	hcwo, _ := http.NewClientWrapper(settings.DrivlyOfferAPIURL, "", 120*time.Second, h, true)
 
 	return &drivlyAPIService{
 		Settings:        settings,
@@ -311,7 +311,7 @@ type DrivlyVINSummary struct {
 }
 
 // todo add tests to this
-func executeAPI(httpClient shared.HTTPClientWrapper, path string) (map[string]interface{}, error) {
+func executeAPI(httpClient http.ClientWrapper, path string) (map[string]interface{}, error) {
 	res, err := httpClient.ExecuteRequest(path, "GET", nil)
 	if res == nil {
 		if err != nil {

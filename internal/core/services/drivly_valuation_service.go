@@ -11,7 +11,7 @@ import (
 
 	"time"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
@@ -33,10 +33,10 @@ type DrivlyValuationService interface {
 type drivlyValuationService struct {
 	dbs          func() *db.ReaderWriter
 	drivlySvc    DrivlyAPIService
-	geoSvc       GoogleGeoAPIService
 	identityAPI  gateways.IdentityAPI
 	telemetryAPI gateways.TelemetryAPI
 	log          *zerolog.Logger
+	locationSvc  LocationService
 }
 
 func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings) DrivlyValuationService {
@@ -44,9 +44,9 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 		dbs:          DBS,
 		log:          log,
 		drivlySvc:    NewDrivlyAPIService(settings, DBS),
-		geoSvc:       NewGoogleGeoAPIService(settings),
 		identityAPI:  gateways.NewIdentityAPIService(log, settings, nil),
 		telemetryAPI: gateways.NewTelemetryAPI(log, settings, nil),
+		locationSvc:  NewLocationService(DBS, settings, log),
 	}
 }
 
@@ -99,35 +99,14 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 	reqData := ValuationRequestData{
 		Mileage: &deviceMileage,
 	}
-	// handle postal code information to send to drivly and store for future use
-	gloc, err := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
+	location, err := d.locationSvc.GetGeoDecodedLocation(ctx, signals, tokenID)
 	if err != nil {
-		d.log.Warn().Err(err).Msgf("failed to get geodecoded location for token %d", tokenID)
-	}
-	if gloc != nil {
-		reqData.ZipCode = &gloc.PostalCode.String
+		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get geo decoded location for token %d", tokenID)
 	} else {
-		if signals != nil && signals.CurrentLocationLatitude.Value > 0 && signals.CurrentLocationLongitude.Value > 0 {
-			// decode the lat long if we have it
-			gl, err := d.geoSvc.GeoDecodeLatLong(signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
-			if err != nil {
-				d.log.Warn().Err(err).Msgf("failed to GeoDecode lat long %f, %f", signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
-			} else {
-				reqData.ZipCode = &gl.PostalCode
-				// persist the info for future
-				gloc = &models.GeodecodedLocation{
-					TokenID:    int64(tokenID),
-					PostalCode: null.StringFrom(gl.PostalCode),
-					Country:    null.StringFrom(gl.Country),
-				}
-				err = gloc.Insert(ctx, d.dbs().Writer, boil.Infer())
-				if err != nil {
-					d.log.Err(err).Msgf("failed to insert geodecoded location for token %d", tokenID)
-				}
-			}
-		}
+		reqData.ZipCode = &location.PostalCode
 	}
-	// add the request data to the valution record
+
+	// add the request data to the valuation record
 	_ = valuation.RequestMetadata.Marshal(reqData)
 	// cal drivly for pricing
 	pricing, err := d.drivlySvc.GetVINPricing(vin, &reqData)

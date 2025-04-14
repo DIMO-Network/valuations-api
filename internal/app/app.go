@@ -69,8 +69,7 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 }
 
 // startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
-func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, userDeviceSvc services.UserDeviceAPIService,
-	ddSvc services.DeviceDefinitionsAPIService, deviceDataSvc services.UserDeviceDataAPIService) {
+func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, userDeviceSvc services.UserDeviceAPIService) {
 
 	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc)
 	//goka setup

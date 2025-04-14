@@ -19,11 +19,13 @@ message ValuationResponse {
 }
 
 message DeviceValuationRequest {
-  string userDeviceId = 1;
+  string userDeviceId = 1 [deprecated=true];
+  uint64 tokenId = 2;
 }
 
 message DeviceOfferRequest {
-  string userDeviceId = 1;
+  string userDeviceId = 1 [deprecated=true];
+  uint64 tokenId = 2;
 }
 
 message DeviceValuation {
