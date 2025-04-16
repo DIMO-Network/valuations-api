@@ -252,7 +252,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
 	}, &s.pdb)
 
-	deviceOffers, err := s.svc.GetUserDeviceOffers(s.ctx, tokenID)
+	deviceOffers, err := s.svc.GetOffers(s.ctx, tokenID)
 
 	assert.NoError(s.T(), err)
 

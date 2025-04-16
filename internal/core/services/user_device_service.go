@@ -3,11 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
-	"fmt"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
-	"io"
-	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -17,7 +13,6 @@ import (
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/pkg/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
@@ -30,10 +25,8 @@ import (
 
 //go:generate mockgen -source user_device_service.go -destination mocks/user_device_service_mock.go
 type UserDeviceAPIService interface {
-	GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error)
-	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
-	GetUserDeviceOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error)
-	GetUserDeviceValuations(ctx context.Context, tokenID uint64) (*core.DeviceValuation, error)
+	GetOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error)
+	GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*core.DeviceValuation, error)
 	CanRequestInstantOffer(ctx context.Context, tokenID uint64) (bool, error)
 	LastRequestDidGiveError(ctx context.Context, tokenID uint64) (bool, error)
 }
@@ -57,51 +50,7 @@ func NewUserDeviceService(devicesConn *grpc.ClientConn, dbs func() *db.ReaderWri
 	}
 }
 
-func (das *userDeviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error) {
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-
-	if len(ethAddr) > 2 && ethAddr[:2] == "0x" {
-		ethAddr = ethAddr[2:]
-	}
-
-	ethAddrBytes, err := hex.DecodeString(ethAddr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid ethereum address: %w", err)
-	}
-
-	userDevice, err := deviceClient.GetUserDeviceByEthAddr(ctx, &pb.GetUserDeviceByEthAddrRequest{EthAddr: ethAddrBytes})
-	if err != nil {
-		return nil, err
-	}
-
-	return userDevice, nil
-}
-
-// GetAllUserDevice gets all userDevices from devices-api
-func (das *userDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error) {
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-	all, err := deviceClient.GetAllUserDevice(ctx, &pb.GetAllUserDeviceRequest{Wmi: wmi})
-	if err != nil {
-		return nil, err
-	}
-
-	var useDevices []*pb.UserDevice
-	for {
-		response, err := all.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("Error while receiving response: %v", err)
-		}
-
-		useDevices = append(useDevices, response)
-	}
-
-	return useDevices, nil
-}
-
-func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, tokenId uint64) (*core.DeviceOffer, error) {
+func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenId uint64) (*core.DeviceOffer, error) {
 	// Drivly data
 	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenId), 10))
 	drivlyVinData, err := models.Valuations(
@@ -118,7 +67,9 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, tokenI
 	return offers, err
 }
 
-func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, tokenID uint64) (*core.DeviceValuation, error) {
+// GetValuations retrieves device valuation details based on the provided tokenID and private JWT token header include Bearer JWT.
+// It queries valuation data, retrieves the latest telemetry signals, and determines the geo-decoded location for valuation.
+func (das *userDeviceAPIService) GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*core.DeviceValuation, error) {
 	d := decimal.New(int64(tokenID), 10)
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(types.NewNullDecimal(d)),
@@ -129,7 +80,7 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, to
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	signals, err := das.telemetryAPI.GetLatestSignals(tokenID)
+	signals, err := das.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWT)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get latest signals for token %d, which are needed to get valuation", tokenID)
 	}

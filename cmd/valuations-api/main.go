@@ -7,6 +7,8 @@ import (
 	"github.com/DIMO-Network/valuations-api/internal/app"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"time"
@@ -56,9 +58,12 @@ func main() {
 	identityAPI := gateways.NewIdentityAPIService(&logger, &cfg)
 	telemetryAPI := gateways.NewTelemetryAPI(&logger, &cfg)
 	locationSvc := services.NewLocationService(pdb.DBS, &cfg, &logger)
+	devicesConn, err := grpc.NewClient(cfg.DevicesGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to dial devices grpc")
+	}
+	userDeviceSvc := services.NewUserDeviceService(devicesConn, pdb.DBS, &logger, locationSvc, telemetryAPI)
 
-	deps := newDependencyContainer(&cfg, logger, pdb.DBS)
-	devicesSvc, devicesConn := deps.getDeviceService()
 	defer devicesConn.Close()
 
 	subcommands.Register(subcommands.HelpCommand(), "")
@@ -72,7 +77,7 @@ func main() {
 
 	// Run API
 	if len(os.Args) == 1 {
-		app.Run(ctx, pdb, logger, &cfg, identityAPI, devicesSvc, telemetryAPI, locationSvc)
+		app.Run(ctx, pdb, logger, &cfg, identityAPI, userDeviceSvc, telemetryAPI, locationSvc)
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

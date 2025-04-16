@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
 	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -56,64 +55,34 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) CanRequestInstantOffer(ctx, toke
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanRequestInstantOffer", reflect.TypeOf((*MockUserDeviceAPIService)(nil).CanRequestInstantOffer), ctx, tokenID)
 }
 
-// GetAllUserDevice mocks base method.
-func (m *MockUserDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*grpc.UserDevice, error) {
+// GetOffers mocks base method.
+func (m *MockUserDeviceAPIService) GetOffers(ctx context.Context, tokenID uint64) (*models.DeviceOffer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllUserDevice", ctx, wmi)
-	ret0, _ := ret[0].([]*grpc.UserDevice)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllUserDevice indicates an expected call of GetAllUserDevice.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetAllUserDevice(ctx, wmi any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUserDevice", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetAllUserDevice), ctx, wmi)
-}
-
-// GetUserDeviceByEthAddr mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*grpc.UserDevice, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceByEthAddr", ctx, ethAddr)
-	ret0, _ := ret[0].(*grpc.UserDevice)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserDeviceByEthAddr indicates an expected call of GetUserDeviceByEthAddr.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceByEthAddr(ctx, ethAddr any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceByEthAddr", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceByEthAddr), ctx, ethAddr)
-}
-
-// GetUserDeviceOffers mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceOffers(ctx context.Context, tokenID uint64) (*models.DeviceOffer, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceOffers", ctx, tokenID)
+	ret := m.ctrl.Call(m, "GetOffers", ctx, tokenID)
 	ret0, _ := ret[0].(*models.DeviceOffer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserDeviceOffers indicates an expected call of GetUserDeviceOffers.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceOffers(ctx, tokenID any) *gomock.Call {
+// GetOffers indicates an expected call of GetOffers.
+func (mr *MockUserDeviceAPIServiceMockRecorder) GetOffers(ctx, tokenID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceOffers", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceOffers), ctx, tokenID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOffers", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetOffers), ctx, tokenID)
 }
 
-// GetUserDeviceValuations mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceValuations(ctx context.Context, tokenID uint64) (*models.DeviceValuation, error) {
+// GetValuations mocks base method.
+func (m *MockUserDeviceAPIService) GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*models.DeviceValuation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceValuations", ctx, tokenID)
+	ret := m.ctrl.Call(m, "GetValuations", ctx, tokenID, privJWT)
 	ret0, _ := ret[0].(*models.DeviceValuation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserDeviceValuations indicates an expected call of GetUserDeviceValuations.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceValuations(ctx, tokenID any) *gomock.Call {
+// GetValuations indicates an expected call of GetValuations.
+func (mr *MockUserDeviceAPIServiceMockRecorder) GetValuations(ctx, tokenID, privJWT any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceValuations", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceValuations), ctx, tokenID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValuations", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetValuations), ctx, tokenID, privJWT)
 }
 
 // LastRequestDidGiveError mocks base method.

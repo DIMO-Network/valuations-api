@@ -26,8 +26,8 @@ import (
 //go:generate mockgen -source drivly_valuation_service.go -destination mocks/drivly_valuation_service_mock.go
 
 type DrivlyValuationService interface {
-	PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error)
-	PullOffer(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (core.DataPullStatusEnum, error)
+	PullOffer(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (core.DataPullStatusEnum, error)
 }
 
 type drivlyValuationService struct {
@@ -52,17 +52,17 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 
 // PullValuation performs a data pull for a vehicle valuation. It retrieves pricing and
 // other relevant data for a given VIN. Not necessary for the userDevice to exist, VIN is what matters
-func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 14
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
-	deviceDef, err := d.identityAPI.GetDefinition(definitionID)
+	vehicle, err := d.identityAPI.GetVehicle(tokenID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
-	localLog := d.log.With().Str("vin", vin).Str("definition_id", definitionID).Uint64("token_id", tokenID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("definition_id", vehicle.Definition.Id).Uint64("token_id", tokenID).Logger()
 
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
@@ -81,16 +81,16 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 		ID:           ksuid.New().String(),
 		Vin:          vin,
 		TokenID:      types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
-		DefinitionID: null.StringFrom(definitionID), // todo make this not nullable
+		DefinitionID: null.StringFrom(vehicle.Definition.Id), // todo make this not nullable
 	}
 
 	// get mileage for the drivly request
-	signals, err := d.telemetryAPI.GetLatestSignals(tokenID)
+	signals, err := d.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWTAuthHeader)
 	if err != nil {
 		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get telemetry latest signals for token %d", tokenID)
 	}
 
-	deviceMileage := getDeviceMileage(signals, deviceDef.Year, time.Now().Year())
+	deviceMileage := getDeviceMileage(signals, vehicle.Definition.Year, time.Now().Year())
 	if deviceMileage == 0 {
 		localLog.Warn().Msg("vehicle mileage found was 0 for valuation pull request")
 	}
@@ -123,7 +123,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 	return core.PulledValuationDrivlyStatus, nil
 }
 
-func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
+func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (core.DataPullStatusEnum, error) {
 	// make sure userdevice exists
 	vehicle, err := d.identityAPI.GetVehicle(tokenID)
 	if err != nil {
@@ -154,7 +154,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 	}
 
 	// get mileage for the drivly request
-	signals, err := d.telemetryAPI.GetLatestSignals(tokenID)
+	signals, err := d.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWTAuthHeader)
 	if err != nil {
 		// just warn if can't get data
 		localLog.Warn().Err(err).Msgf("could not find any telemtry data to obtain mileage or location - continuing without")

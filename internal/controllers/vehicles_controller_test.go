@@ -122,7 +122,7 @@ func (s *VehiclesControllerTestSuite) TestGetValuations_Drivly2() {
 		Owner: "0x123",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), tokenID).Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetValuations(gomock.Any(), tokenID, gomock.Any()).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -168,7 +168,7 @@ func (s *VehiclesControllerTestSuite) TestGetOffers() {
 		Owner: "0x123",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), tokenID).Return(&core.DeviceOffer{
+	s.userDeviceSvc.EXPECT().GetOffers(gomock.Any(), tokenID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{
 			{
 				Source:  "drivly",

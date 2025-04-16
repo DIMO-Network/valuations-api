@@ -59,13 +59,15 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 		return err
 	}
 
+	privJWT := c.Get(fiber.HeaderAuthorization)
+
 	takeStr := c.Query("take")
 	take, err := strconv.Atoi(takeStr)
 	if err != nil || take <= 0 {
 		take = 10
 	}
 	// need to pass in userDeviceId until totally complete migration
-	valuation, err := vc.userDeviceService.GetUserDeviceValuations(c.Context(), tokenID.Uint64())
+	valuation, err := vc.userDeviceService.GetValuations(c.Context(), tokenID.Uint64(), privJWT)
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 		take = 10
 	}
 	// todo change below to get list. Make sure that if older than 7 days does not include offer link
-	offer, err := vc.userDeviceService.GetUserDeviceOffers(c.Context(), tokenID.Uint64())
+	offer, err := vc.userDeviceService.GetOffers(c.Context(), tokenID.Uint64())
 	if err != nil {
 		return err
 	}
@@ -167,7 +169,7 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	}
 
 	if strings.Contains(services.NorthAmercanCountries, location.CountryCode) {
-		status, valuationErr = vc.drivlyValuationSvc.PullOffer(c.Context(), tokenID.Uint64(), vinVC.Vin)
+		status, valuationErr = vc.drivlyValuationSvc.PullOffer(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	} else {
 		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vehicle.Definition.Id, vinVC.Vin)
 	}

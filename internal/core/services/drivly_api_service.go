@@ -3,12 +3,12 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/DIMO-Network/shared/pkg/http"
 	"io"
 	"net/url"
 	"time"
 
 	"github.com/DIMO-Network/shared/pkg/db"
+	"github.com/DIMO-Network/shared/pkg/http"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/pkg/errors"
 )
