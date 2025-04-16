@@ -2,6 +2,7 @@ package gateways
 
 import (
 	"encoding/json"
+	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"io"
 	"strconv"
 	"time"
@@ -23,9 +24,9 @@ type identityAPIService struct {
 
 //go:generate mockgen -source identity_api.go -destination mocks/identity_api_mock.go -package mock_gateways
 type IdentityAPI interface {
-	GetManufacturer(slug string) (*Manufacturer, error)
-	GetDefinition(definitionID string) (*DeviceDefinition, error)
-	GetVehicle(tokenID uint64) (*Vehicle, error)
+	GetManufacturer(slug string) (*coremodels.Manufacturer, error)
+	GetDefinition(definitionID string) (*coremodels.DeviceDefinition, error)
+	GetVehicle(tokenID uint64) (*coremodels.Vehicle, error)
 }
 
 // NewIdentityAPIService creates a new instance of IdentityAPI, initializing it with the provided logger, settings, and HTTP client.
@@ -42,7 +43,7 @@ func NewIdentityAPIService(logger *zerolog.Logger, settings *config.Settings) Id
 	}
 }
 
-func (i *identityAPIService) GetVehicle(tokenID uint64) (*Vehicle, error) {
+func (i *identityAPIService) GetVehicle(tokenID uint64) (*coremodels.Vehicle, error) {
 	query := `{
   vehicle(tokenId: ` + strconv.FormatUint(tokenID, 10) + `) {
     id
@@ -57,7 +58,7 @@ func (i *identityAPIService) GetVehicle(tokenID uint64) (*Vehicle, error) {
   }`
 	var wrapper struct {
 		Data struct {
-			Vehicle Vehicle `json:"vehicle"`
+			Vehicle coremodels.Vehicle `json:"vehicle"`
 		} `json:"data"`
 	}
 	err := i.fetchWithQuery(query, &wrapper)
@@ -70,7 +71,7 @@ func (i *identityAPIService) GetVehicle(tokenID uint64) (*Vehicle, error) {
 	return &wrapper.Data.Vehicle, nil
 }
 
-func (i *identityAPIService) GetDefinition(definitionID string) (*DeviceDefinition, error) {
+func (i *identityAPIService) GetDefinition(definitionID string) (*coremodels.DeviceDefinition, error) {
 	query := `{
   deviceDefinition(by: {id: "` + definitionID + `"}) {
     model,
@@ -89,7 +90,7 @@ func (i *identityAPIService) GetDefinition(definitionID string) (*DeviceDefiniti
 	}`
 	var wrapper struct {
 		Data struct {
-			DeviceDefinition DeviceDefinition `json:"deviceDefinition"`
+			DeviceDefinition coremodels.DeviceDefinition `json:"deviceDefinition"`
 		} `json:"data"`
 	}
 	err := i.fetchWithQuery(query, &wrapper)
@@ -103,7 +104,7 @@ func (i *identityAPIService) GetDefinition(definitionID string) (*DeviceDefiniti
 }
 
 // GetManufacturer from identity-api by the name - must match exactly. Returns the token id and other on chain info
-func (i *identityAPIService) GetManufacturer(name string) (*Manufacturer, error) {
+func (i *identityAPIService) GetManufacturer(name string) (*coremodels.Manufacturer, error) {
 	query := `{
   manufacturer(by: {name: "` + name + `"}) {
     	tokenId
@@ -114,7 +115,7 @@ func (i *identityAPIService) GetManufacturer(name string) (*Manufacturer, error)
 	}`
 	var wrapper struct {
 		Data struct {
-			Manufacturer Manufacturer `json:"manufacturer"`
+			Manufacturer coremodels.Manufacturer `json:"manufacturer"`
 		} `json:"data"`
 	}
 	err := i.fetchWithQuery(query, &wrapper)
@@ -129,7 +130,7 @@ func (i *identityAPIService) GetManufacturer(name string) (*Manufacturer, error)
 
 func (i *identityAPIService) fetchWithQuery(query string, result interface{}) error {
 	// GraphQL request
-	requestPayload := GraphQLRequest{Query: query}
+	requestPayload := coremodels.GraphQLRequest{Query: query}
 	payloadBytes, err := json.Marshal(requestPayload)
 	if err != nil {
 		return err
@@ -162,37 +163,4 @@ func (i *identityAPIService) fetchWithQuery(query string, result interface{}) er
 	}
 
 	return nil
-}
-
-type Manufacturer struct {
-	TokenID int    `json:"tokenId"`
-	Name    string `json:"name"`
-	TableID int    `json:"tableId"`
-	Owner   string `json:"owner"`
-}
-
-type GraphQLRequest struct {
-	Query string `json:"query"`
-}
-
-type DeviceDefinition struct {
-	Model        string       `json:"model"`
-	Year         int          `json:"year"`
-	Manufacturer Manufacturer `json:"manufacturer"`
-	ImageURI     string       `json:"imageURI"`
-	Attributes   []struct {
-		Name  string `json:"name"`
-		Value string `json:"value"`
-	} `json:"attributes"`
-}
-
-type Vehicle struct {
-	Id         string `json:"id"`
-	Definition struct {
-		Id    string `json:"id"`
-		Make  string `json:"make"`
-		Model string `json:"model"`
-		Year  int    `json:"year"`
-	} `json:"definition"`
-	Owner string `json:"owner"`
 }

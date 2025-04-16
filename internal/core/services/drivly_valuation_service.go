@@ -203,7 +203,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 
 const EstMilesPerYear = 12000.0
 
-func getDeviceMileage(signals *gateways.SignalsLatest, modelYear int, currentYear int) (mileage float64) {
+func getDeviceMileage(signals *core.SignalsLatest, modelYear int, currentYear int) (mileage float64) {
 	if signals != nil {
 		odoKm := signals.PowertrainTransmissionTravelledDistance.Value
 		if odoKm > 0 {

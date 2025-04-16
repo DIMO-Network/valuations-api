@@ -13,8 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways"
-	services "github.com/DIMO-Network/valuations-api/internal/core/services"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +41,10 @@ func (m *MockLocationService) EXPECT() *MockLocationServiceMockRecorder {
 }
 
 // GetGeoDecodedLocation mocks base method.
-func (m *MockLocationService) GetGeoDecodedLocation(ctx context.Context, signals *gateways.SignalsLatest, tokenID uint64) (*services.LocationResponse, error) {
+func (m *MockLocationService) GetGeoDecodedLocation(ctx context.Context, signals *models.SignalsLatest, tokenID uint64) (*models.LocationResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGeoDecodedLocation", ctx, signals, tokenID)
-	ret0, _ := ret[0].(*services.LocationResponse)
+	ret0, _ := ret[0].(*models.LocationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

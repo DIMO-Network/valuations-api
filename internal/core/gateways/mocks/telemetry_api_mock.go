@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,10 +41,10 @@ func (m *MockTelemetryAPI) EXPECT() *MockTelemetryAPIMockRecorder {
 }
 
 // GetLatestSignals mocks base method.
-func (m *MockTelemetryAPI) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*gateways.SignalsLatest, error) {
+func (m *MockTelemetryAPI) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*models.SignalsLatest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestSignals", ctx, tokenID, authHeader)
-	ret0, _ := ret[0].(*gateways.SignalsLatest)
+	ret0, _ := ret[0].(*models.SignalsLatest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -56,10 +56,10 @@ func (mr *MockTelemetryAPIMockRecorder) GetLatestSignals(ctx, tokenID, authHeade
 }
 
 // GetVinVC mocks base method.
-func (m *MockTelemetryAPI) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*gateways.VinVCLatest, error) {
+func (m *MockTelemetryAPI) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*models.VinVCLatest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVinVC", ctx, tokenID, authHeader)
-	ret0, _ := ret[0].(*gateways.VinVCLatest)
+	ret0, _ := ret[0].(*models.VinVCLatest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -2,13 +2,12 @@ package gateways
 
 import (
 	"context"
-	"github.com/setnicka/graphql"
-	"strconv"
-	"time"
-
 	"github.com/DIMO-Network/valuations-api/internal/config"
+	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/setnicka/graphql"
+	"strconv"
 )
 
 type telemetryAPIService struct {
@@ -18,8 +17,8 @@ type telemetryAPIService struct {
 
 //go:generate mockgen -source telemetry_api.go -destination mocks/telemetry_api_mock.go -package mock_gateways
 type TelemetryAPI interface {
-	GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*SignalsLatest, error)
-	GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*VinVCLatest, error)
+	GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.SignalsLatest, error)
+	GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.VinVCLatest, error)
 }
 
 func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings) TelemetryAPI {
@@ -31,7 +30,7 @@ func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings) Telemetr
 }
 
 // GetVinVC gets the VIN. authHeader must be full string with Bearer xxx
-func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*VinVCLatest, error) {
+func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.VinVCLatest, error) {
 	tIDStr := strconv.FormatUint(tokenID, 10)
 	req := graphql.NewRequest(`vinVCLatest(tokenId:$tokenId) {
     vin
@@ -46,7 +45,7 @@ func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, auth
 
 	var wrapper struct {
 		Data struct {
-			VinVCLatest VinVCLatest `json:"vinVCLatest"`
+			VinVCLatest coremodels.VinVCLatest `json:"vinVCLatest"`
 		} `json:"data"`
 	}
 
@@ -61,7 +60,7 @@ func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, auth
 }
 
 // GetLatestSignals odometer and location. authHeader must be full string with Bearer xxx
-func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*SignalsLatest, error) {
+func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.SignalsLatest, error) {
 	tIDStr := strconv.FormatUint(tokenID, 10)
 	req := graphql.NewRequest(`signalsLatest(tokenId:$tokenId) {
 		powertrainTransmissionTravelledDistance {
@@ -82,7 +81,7 @@ func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint
 
 	var wrapper struct {
 		Data struct {
-			SignalsLatest SignalsLatest `json:"signalsLatest"`
+			SignalsLatest coremodels.SignalsLatest `json:"signalsLatest"`
 		} `json:"data"`
 	}
 	if err := i.gclient.Run(ctx, req, &wrapper); err != nil {
@@ -92,28 +91,4 @@ func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint
 		return nil, errors.Wrapf(ErrNotFound, "no odometer for tokenId: %s", tokenID)
 	}
 	return &wrapper.Data.SignalsLatest, nil
-}
-
-type SignalsLatest struct {
-	PowertrainTransmissionTravelledDistance struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"powertrainTransmissionTravelledDistance"`
-	CurrentLocationLatitude struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"currentLocationLatitude"`
-	CurrentLocationLongitude struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"currentLocationLongitude"`
-}
-
-type VinVCLatest struct {
-	Vin         string    `json:"vin"`
-	RecordedBy  string    `json:"recordedBy"`
-	RecordedAt  time.Time `json:"recordedAt"`
-	CountryCode string    `json:"countryCode"`
-	ValidFrom   time.Time `json:"validFrom"`
-	ValidTo     time.Time `json:"validTo"`
 }

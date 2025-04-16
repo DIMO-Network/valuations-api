@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
-	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
+	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
@@ -13,7 +13,7 @@ import (
 
 //go:generate mockgen -source location_service.go -destination mocks/location_service_mock.go
 type LocationService interface {
-	GetGeoDecodedLocation(ctx context.Context, signals *gateways.SignalsLatest, tokenID uint64) (*LocationResponse, error)
+	GetGeoDecodedLocation(ctx context.Context, signals *coremodels.SignalsLatest, tokenID uint64) (*coremodels.LocationResponse, error)
 }
 
 type locationService struct {
@@ -28,13 +28,13 @@ func NewLocationService(db func() *db.ReaderWriter, settings *config.Settings, l
 }
 
 // GetGeoDecodedLocation checks in database if we've already decoded this location, if not pulls new from google and stores in db
-func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *gateways.SignalsLatest, tokenID uint64) (*LocationResponse, error) {
+func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *coremodels.SignalsLatest, tokenID uint64) (*coremodels.LocationResponse, error) {
 	gloc, err := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, ls.dbs().Reader)
 	if err != nil {
 		return nil, err
 	}
 	if gloc != nil {
-		return &LocationResponse{
+		return &coremodels.LocationResponse{
 			PostalCode:  gloc.PostalCode.String,
 			CountryCode: gloc.Country.String,
 		}, nil
@@ -54,16 +54,11 @@ func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *g
 		if err != nil {
 			ls.logger.Err(err).Msgf("failed to insert geodecoded location for token %d", tokenID)
 		}
-		return &LocationResponse{
+		return &coremodels.LocationResponse{
 			PostalCode:  gl.PostalCode,
 			CountryCode: gl.Country,
 		}, nil
 	}
 
 	return nil, nil
-}
-
-type LocationResponse struct {
-	PostalCode  string `json:"postalCode"`
-	CountryCode string `json:"countryCode"`
 }
