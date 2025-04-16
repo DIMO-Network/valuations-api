@@ -5,10 +5,7 @@ go 1.23.0
 toolchain go1.23.2
 
 require (
-	github.com/DIMO-Network/device-definitions-api v1.2.68
-	github.com/DIMO-Network/devices-api v1.24.7
 	github.com/DIMO-Network/shared v1.0.0
-	github.com/DIMO-Network/users-api v0.7.1
 	github.com/IBM/sarama v1.43.3
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b
 	github.com/docker/go-connections v0.5.0
@@ -154,7 +151,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.55.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
