@@ -41,16 +41,16 @@ func (m *MockVincarioValuationService) EXPECT() *MockVincarioValuationServiceMoc
 }
 
 // PullValuation mocks base method.
-func (m *MockVincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (models.DataPullStatusEnum, error) {
+func (m *MockVincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, vin string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PullValuation", ctx, tokenID, definitionID, vin)
+	ret := m.ctrl.Call(m, "PullValuation", ctx, tokenID, vin)
 	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PullValuation indicates an expected call of PullValuation.
-func (mr *MockVincarioValuationServiceMockRecorder) PullValuation(ctx, tokenID, definitionID, vin any) *gomock.Call {
+func (mr *MockVincarioValuationServiceMockRecorder) PullValuation(ctx, tokenID, vin any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockVincarioValuationService)(nil).PullValuation), ctx, tokenID, definitionID, vin)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockVincarioValuationService)(nil).PullValuation), ctx, tokenID, vin)
 }

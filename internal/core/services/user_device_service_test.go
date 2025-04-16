@@ -4,11 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
+	"testing"
+
 	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"go.uber.org/mock/gomock"
-	"os"
-	"testing"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/rs/zerolog"
@@ -146,7 +147,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	}, &s.pdb)
 
 	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -178,7 +179,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
 	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -215,7 +216,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, &s.pdb)
 	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -238,10 +239,10 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
 	}, &s.pdb)
 	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
-	
+
 	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)

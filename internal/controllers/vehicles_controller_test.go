@@ -4,9 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
-	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
 	"testing"
+
+	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
 
 	"github.com/stretchr/testify/require"
 
@@ -84,18 +84,18 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 	tokenID := uint64(12345)
 	vin := "vinny"
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(gateways.Vehicle{
-		Id: "xxx",
+	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
+		ID: "xxx",
 		Definition: struct {
-			Id    string `json:"id"`
+			ID    string `json:"id"`
 			Make  string `json:"make"`
 			Model string `json:"model"`
 			Year  int    `json:"year"`
-		}{Id: "ford_escape_2022"},
+		}{ID: "ford_escape_2022"},
 		Owner: "0x123",
 	}, nil)
 
-	s.telemetry.EXPECT().GetVinVC(gomock.Any(), tokenID, gomock.Any()).Return(gateways.VinVCLatest{
+	s.telemetry.EXPECT().GetVinVC(gomock.Any(), tokenID, gomock.Any()).Return(core.VinVCLatest{
 		Vin:         vin,
 		CountryCode: "USA",
 	}, nil)
@@ -111,14 +111,14 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 func (s *VehiclesControllerTestSuite) TestGetValuations_Drivly2() {
 	tokenID := uint64(12345)
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(gateways.Vehicle{
-		Id: "xxx",
+	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
+		ID: "xxx",
 		Definition: struct {
-			Id    string `json:"id"`
+			ID    string `json:"id"`
 			Make  string `json:"make"`
 			Model string `json:"model"`
 			Year  int    `json:"year"`
-		}{Id: "ford_escape_2022"},
+		}{ID: "ford_escape_2022"},
 		Owner: "0x123",
 	}, nil)
 
@@ -157,14 +157,14 @@ func (s *VehiclesControllerTestSuite) TestGetOffers() {
 
 	tokenID := uint64(12345)
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(gateways.Vehicle{
-		Id: "xxx",
+	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
+		ID: "xxx",
 		Definition: struct {
-			Id    string `json:"id"`
+			ID    string `json:"id"`
 			Make  string `json:"make"`
 			Model string `json:"model"`
 			Year  int    `json:"year"`
-		}{Id: "ford_escape_2022"},
+		}{ID: "ford_escape_2022"},
 		Owner: "0x123",
 	}, nil)
 

@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/DIMO-Network/shared/pkg/db"
 	"net/url"
+
+	"github.com/DIMO-Network/shared/pkg/db"
 )
 
 type Settings struct {

@@ -25,9 +25,9 @@ type DeviceDefinition struct {
 }
 
 type Vehicle struct {
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	Definition struct {
-		Id    string `json:"id"`
+		ID    string `json:"id"`
 		Make  string `json:"make"`
 		Model string `json:"model"`
 		Year  int    `json:"year"`

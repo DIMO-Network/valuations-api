@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/ericlagergren/decimal"
@@ -25,7 +26,7 @@ import (
 //go:generate mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go
 
 type VincarioValuationService interface {
-	PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
 }
 
 type vincarioValuationService struct {
@@ -45,7 +46,7 @@ func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logge
 }
 
 // PullValuation ideally we pass country code into here
-func (d *vincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, definitionID, vin string) (core.DataPullStatusEnum, error) {
+func (d *vincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 30 // one month
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
@@ -57,7 +58,7 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, tokenID ui
 		return core.ErrorDataPullStatus, err
 	}
 	// do not pull for USA
-	gloc, err := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
+	gloc, _ := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
 	countryCode := ""
 	if gloc != nil {
 		countryCode = gloc.Country.String
@@ -80,7 +81,7 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, tokenID ui
 
 	externalVinData := &models.Valuation{
 		ID:           ksuid.New().String(),
-		DefinitionID: null.StringFrom(vehicle.Definition.Id),
+		DefinitionID: null.StringFrom(vehicle.Definition.ID),
 		Vin:          vin,
 		// at some point change the db datatype to bigint
 		TokenID: types.NewNullDecimal(decimal.New(int64(tokenID), 0)),

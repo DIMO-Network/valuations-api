@@ -1,12 +1,12 @@
 package controllers
 
 import (
+	"math/big"
+	"strings"
+
 	"github.com/DIMO-Network/shared/pkg/logfields"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"strings"
 
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 
@@ -61,11 +61,11 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 
 	privJWT := c.Get(fiber.HeaderAuthorization)
 
-	takeStr := c.Query("take")
-	take, err := strconv.Atoi(takeStr)
-	if err != nil || take <= 0 {
-		take = 10
-	}
+	//takeStr := c.Query("take")
+	//take, err := strconv.Atoi(takeStr)
+	//if err != nil || take <= 0 {
+	//	take = 10
+	//}
 	// need to pass in userDeviceId until totally complete migration
 	valuation, err := vc.userDeviceService.GetValuations(c.Context(), tokenID.Uint64(), privJWT)
 	if err != nil {
@@ -94,11 +94,11 @@ func (vc *VehiclesController) GetOffers(c *fiber.Ctx) error {
 		return err
 	}
 
-	takeStr := c.Query("take")
-	take, err := strconv.Atoi(takeStr)
-	if err != nil || take <= 0 {
-		take = 10
-	}
+	//takeStr := c.Query("take")
+	//take, err := strconv.Atoi(takeStr)
+	//if err != nil || take <= 0 {
+	//	take = 10
+	//}
 	// todo change below to get list. Make sure that if older than 7 days does not include offer link
 	offer, err := vc.userDeviceService.GetOffers(c.Context(), tokenID.Uint64())
 	if err != nil {
@@ -127,12 +127,6 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	privJWT := c.Get(fiber.HeaderAuthorization)
 
 	localLog := vc.log.With().Str(logfields.VehicleTokenID, tidStr).Str(logfields.HTTPPath, c.Path()).Logger()
-
-	vehicle, err := vc.identityAPI.GetVehicle(tokenID.Uint64())
-	if err != nil {
-		localLog.Err(err).Msg("failed to get user device")
-		return err
-	}
 
 	canRequestInsantOffer, err := vc.userDeviceService.CanRequestInstantOffer(c.Context(), tokenID.Uint64())
 	if err != nil {
@@ -171,7 +165,7 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	if strings.Contains(services.NorthAmercanCountries, location.CountryCode) {
 		status, valuationErr = vc.drivlyValuationSvc.PullOffer(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	} else {
-		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vehicle.Definition.Id, vinVC.Vin)
+		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin)
 	}
 	if valuationErr != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
@@ -202,12 +196,6 @@ func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
 
 	localLog := vc.log.With().Str(logfields.VehicleTokenID, tidStr).Str(logfields.HTTPPath, c.Path()).Logger()
 
-	vehicle, err := vc.identityAPI.GetVehicle(tokenID.Uint64())
-	if err != nil {
-		localLog.Err(err).Msg("failed to get user device")
-		return err
-	}
-
 	var valuationErr error
 	var status core.DataPullStatusEnum
 
@@ -216,10 +204,10 @@ func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
 		return errors.Wrap(err, "failed to get vinVC for tokenId: "+tidStr)
 	}
 
-	status, valuationErr = vc.drivlyValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vehicle.Definition.Id, vinVC.Vin)
+	status, valuationErr = vc.drivlyValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	if valuationErr != nil {
 		localLog.Err(valuationErr).Msg("failed to get valuation from drivly, retrying with vincario")
-		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vehicle.Definition.Id, vinVC.Vin)
+		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin)
 	}
 	if valuationErr != nil {
 		localLog.Err(valuationErr).Msg("failed to get valuation from vincario")

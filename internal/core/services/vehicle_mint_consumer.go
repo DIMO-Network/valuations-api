@@ -2,9 +2,10 @@ package services
 
 import (
 	"encoding/json"
-	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"strings"
 	"time"
+
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/shared/pkg/payloads"
@@ -46,7 +47,7 @@ func NewVehicleMintValuationIngest(dbs func() *db.ReaderWriter, logger zerolog.L
 }
 
 // ProcessVehicleMintMsg gets mint event types and requests a valuation and offer for the VIN in the message
-func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg any) {
+func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(_ goka.Context, msg any) {
 	// if have issues with context etc use context.Background() instead of the goka one
 	event := msg.(*payloads.CloudEvent[json.RawMessage])
 	// event.ID is the userDeviceId, set from devices-api
@@ -70,7 +71,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 		return
 	}
 	localLog.Info().Msg("skipping processing mint event - need to figure out business")
-	return
+
 	// proposed solution:
 	// have mobile app handle request after there is telemetry data, or use webhooks
 	// another problem: if we do this async from an event, we don't have users priv token.
@@ -83,7 +84,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	//	return
 	//}
 
-	//localLog = localLog.With().Str("definition_id", vehicle.Definition.Id).Logger()
+	//localLog = localLog.With().Str("definition_id", vehicle.Definition.ID).Logger()
 	//
 	//// problem here is most likely we won't have any telemetry data yet since vehicle was just minted
 	//// ideally this would go into a delayed queue, or be triggered from events when we get telemetry
@@ -100,7 +101,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	//}
 	//// we currently have two vendors for valuations
 	//if strings.Contains(NorthAmercanCountries, location.CountryCode) {
-	//	status, err := i.drivlyValuationService.PullValuation(ctx.Context(), tokenID, vehicle.Definition.Id, vin)
+	//	status, err := i.drivlyValuationService.PullValuation(ctx.Context(), tokenID, vehicle.Definition.ID, vin)
 	//	if err != nil {
 	//		localLog.Err(err).Msg("valuation request - error pulling drivly data")
 	//	} else {
@@ -114,7 +115,7 @@ func (i *vehicleMintValuationIngest) ProcessVehicleMintMsg(ctx goka.Context, msg
 	//		localLog.Info().Msgf("instant offer from Drivly completed OK with status %s", status)
 	//	}
 	//} else {
-	//	status, err := i.vincarioValuationService.PullValuation(ctx.Context(), tokenID, vehicle.Definition.Id, vin)
+	//	status, err := i.vincarioValuationService.PullValuation(ctx.Context(), tokenID, vehicle.Definition.ID, vin)
 	//	if err != nil {
 	//		localLog.Err(err).Msg("valuation request - error pulling vincario data")
 	//	} else {

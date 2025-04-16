@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
+	"os"
+	"time"
+
 	"github.com/DIMO-Network/shared/pkg/settings"
 	"github.com/DIMO-Network/valuations-api/internal/app"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"os"
-	"time"
 
 	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/google/subcommands"

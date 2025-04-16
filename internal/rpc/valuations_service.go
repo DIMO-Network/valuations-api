@@ -111,9 +111,9 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 	}, nil
 }
 
-func (s *valuationsService) GetUserDeviceValuation(ctx context.Context, req *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
+func (s *valuationsService) GetUserDeviceValuation(_ context.Context, _ *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
 
-	return nil, fmt.Errorf("No longer supported, must provide Privilege token")
+	return nil, fmt.Errorf("no longer supported, must provide Privilege token")
 
 	//valuations, err := s.userDeviceService.GetValuations(ctx, req.TokenId, "")
 	//

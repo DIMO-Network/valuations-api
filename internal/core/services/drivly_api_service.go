@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"time"
 
+	core "github.com/DIMO-Network/valuations-api/internal/core/models"
+
 	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/shared/pkg/http"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -16,9 +18,9 @@ import (
 //go:generate mockgen -source drivly_api_service.go -destination mocks/drivly_api_service_mock.go
 type DrivlyAPIService interface {
 	GetVINInfo(vin string) (map[string]interface{}, error)
-	GetVINPricing(vin string, reqData *ValuationRequestData) (map[string]any, error)
+	GetVINPricing(vin string, reqData *core.ValuationRequestData) (map[string]any, error)
 
-	GetOffersByVIN(vin string, reqData *ValuationRequestData) (map[string]interface{}, error)
+	GetOffersByVIN(vin string, reqData *core.ValuationRequestData) (map[string]interface{}, error)
 	GetAutocheckByVIN(vin string) (map[string]interface{}, error)
 	GetBuildByVIN(vin string) (map[string]interface{}, error)
 	GetCargurusByVIN(vin string) (map[string]interface{}, error)
@@ -30,12 +32,7 @@ type DrivlyAPIService interface {
 	GetKBBByVIN(vin string) (map[string]interface{}, error)
 	GetVRoomByVIN(vin string) (map[string]interface{}, error)
 
-	GetExtendedOffersByVIN(vin string) (*DrivlyVINSummary, error)
-}
-
-type ValuationRequestData struct {
-	Mileage *float64 `json:"mileage,omitempty"`
-	ZipCode *string  `json:"zipCode,omitempty"`
+	GetExtendedOffersByVIN(vin string) (*core.DrivlyVINSummary, error)
 }
 
 type drivlyAPIService struct {
@@ -73,7 +70,7 @@ func (ds *drivlyAPIService) GetVINInfo(vin string) (map[string]interface{}, erro
 }
 
 // GetVINPricing mileage is not sent if nil and zipcode is not sent if length is not equal to 5
-func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *ValuationRequestData) (map[string]any, error) {
+func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *core.ValuationRequestData) (map[string]any, error) {
 	params := url.Values{}
 	if reqData.Mileage != nil && *reqData.Mileage < 400000 {
 		params.Add("mileage", fmt.Sprint(int(*reqData.Mileage)))
@@ -97,7 +94,7 @@ func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *ValuationRequestD
 }
 
 // GetOffersByVIN mileage is not sent if nil and zipcode is not sent if length is not equal to 5
-func (ds *drivlyAPIService) GetOffersByVIN(vin string, reqData *ValuationRequestData) (map[string]interface{}, error) {
+func (ds *drivlyAPIService) GetOffersByVIN(vin string, reqData *core.ValuationRequestData) (map[string]interface{}, error) {
 	params := url.Values{}
 	if reqData.Mileage != nil && *reqData.Mileage < 400000 {
 		params.Add("mileage", fmt.Sprint(int(*reqData.Mileage)))
@@ -216,8 +213,8 @@ func (ds *drivlyAPIService) GetVRoomByVIN(vin string) (map[string]interface{}, e
 }
 
 // GetExtendedOffersByVIN calls all apis for offers and build info except the VIN info endpoint
-func (ds *drivlyAPIService) GetExtendedOffersByVIN(vin string) (*DrivlyVINSummary, error) {
-	result := new(DrivlyVINSummary)
+func (ds *drivlyAPIService) GetExtendedOffersByVIN(vin string) (*core.DrivlyVINSummary, error) {
+	result := new(core.DrivlyVINSummary)
 
 	pricingRes, err := ds.GetVINPricing(vin, nil)
 	if err != nil {
@@ -293,21 +290,6 @@ func (ds *drivlyAPIService) GetExtendedOffersByVIN(vin string) (*DrivlyVINSummar
 	result.VRoom = vroomRes
 
 	return result, nil
-}
-
-type DrivlyVINSummary struct {
-	Pricing   map[string]interface{}
-	Offers    map[string]interface{}
-	AutoCheck map[string]interface{}
-	Build     map[string]interface{}
-	Cargurus  map[string]interface{}
-	Carvana   map[string]interface{}
-	Carmax    map[string]interface{}
-	Carstory  map[string]interface{}
-	Edmunds   map[string]interface{}
-	TMV       map[string]interface{}
-	KBB       map[string]interface{}
-	VRoom     map[string]interface{}
 }
 
 func executeAPI(httpClient http.ClientWrapper, path string) (map[string]interface{}, error) {

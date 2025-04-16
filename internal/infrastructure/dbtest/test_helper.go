@@ -3,10 +3,11 @@ package dbtest
 import (
 	"context"
 	"database/sql"
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 
 	_ "embed" //nolint
 

@@ -3,12 +3,13 @@ package services
 import (
 	"context"
 	"database/sql"
-	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
@@ -50,9 +51,9 @@ func NewUserDeviceService(devicesConn *grpc.ClientConn, dbs func() *db.ReaderWri
 	}
 }
 
-func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenId uint64) (*core.DeviceOffer, error) {
+func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error) {
 	// Drivly data
-	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenId), 10))
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 10))
 	drivlyVinData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly

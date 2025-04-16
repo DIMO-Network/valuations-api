@@ -3,13 +3,14 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"github.com/DIMO-Network/shared/pkg/payloads"
-	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/DIMO-Network/shared/pkg/payloads"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/IBM/sarama"
 	"github.com/burdiyan/kafkautil"

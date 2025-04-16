@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/ericlagergren/decimal"
@@ -62,7 +63,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
-	localLog := d.log.With().Str("vin", vin).Str("definition_id", vehicle.Definition.Id).Uint64("token_id", tokenID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("definition_id", vehicle.Definition.ID).Uint64("token_id", tokenID).Logger()
 
 	// determine if want to pull pricing data
 	existingPricingData, _ := models.Valuations(
@@ -81,7 +82,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 		ID:           ksuid.New().String(),
 		Vin:          vin,
 		TokenID:      types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
-		DefinitionID: null.StringFrom(vehicle.Definition.Id), // todo make this not nullable
+		DefinitionID: null.StringFrom(vehicle.Definition.ID), // todo make this not nullable
 	}
 
 	// get mileage for the drivly request
@@ -95,7 +96,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 		localLog.Warn().Msg("vehicle mileage found was 0 for valuation pull request")
 	}
 
-	reqData := ValuationRequestData{
+	reqData := core.ValuationRequestData{
 		Mileage: &deviceMileage,
 	}
 	location, err := d.locationSvc.GetGeoDecodedLocation(ctx, signals, tokenID)
@@ -134,7 +135,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
-	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", vehicle.Definition.Id).Uint64("token_id", tokenID).Logger()
+	localLog := d.log.With().Str("vin", vin).Str("device_definition_id", vehicle.Definition.ID).Uint64("token_id", tokenID).Logger()
 
 	existingOfferData, _ := models.Valuations(
 		models.ValuationWhere.Vin.EQ(vin),
@@ -148,7 +149,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 		}
 	}
 	// future: pull by tokenID from identity-api
-	deviceDef, err := d.identityAPI.GetDefinition(vehicle.Definition.Id)
+	deviceDef, err := d.identityAPI.GetDefinition(vehicle.Definition.ID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
@@ -165,7 +166,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 		localLog.Warn().Msg("vehicle mileage found was 0")
 	}
 
-	params := ValuationRequestData{
+	params := core.ValuationRequestData{
 		Mileage: &deviceMileage,
 	}
 	gloc, _ := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
@@ -183,7 +184,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 	// insert new offer record
 	newOffer := &models.Valuation{
 		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(vehicle.Definition.Id),
+		DeviceDefinitionID: null.StringFrom(vehicle.Definition.ID),
 		Vin:                vin,
 		TokenID:            types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
 	}

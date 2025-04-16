@@ -2,10 +2,11 @@ package gateways
 
 import (
 	"encoding/json"
-	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"io"
 	"strconv"
 	"time"
+
+	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 
 	"github.com/DIMO-Network/shared/pkg/http"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -65,7 +66,7 @@ func (i *identityAPIService) GetVehicle(tokenID uint64) (*coremodels.Vehicle, er
 	if err != nil {
 		return nil, err
 	}
-	if wrapper.Data.Vehicle.Id == "" {
+	if wrapper.Data.Vehicle.ID == "" {
 		return nil, errors.Wrapf(ErrNotFound, "identity-api did not find vehicle with tokenId: %d", tokenID)
 	}
 	return &wrapper.Data.Vehicle, nil

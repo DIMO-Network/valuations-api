@@ -12,7 +12,7 @@ package mock_services
 import (
 	reflect "reflect"
 
-	services "github.com/DIMO-Network/valuations-api/internal/core/services"
+	models "github.com/DIMO-Network/valuations-api/internal/core/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -145,10 +145,10 @@ func (mr *MockDrivlyAPIServiceMockRecorder) GetEdmundsByVIN(vin any) *gomock.Cal
 }
 
 // GetExtendedOffersByVIN mocks base method.
-func (m *MockDrivlyAPIService) GetExtendedOffersByVIN(vin string) (*services.DrivlyVINSummary, error) {
+func (m *MockDrivlyAPIService) GetExtendedOffersByVIN(vin string) (*models.DrivlyVINSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendedOffersByVIN", vin)
-	ret0, _ := ret[0].(*services.DrivlyVINSummary)
+	ret0, _ := ret[0].(*models.DrivlyVINSummary)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -175,7 +175,7 @@ func (mr *MockDrivlyAPIServiceMockRecorder) GetKBBByVIN(vin any) *gomock.Call {
 }
 
 // GetOffersByVIN mocks base method.
-func (m *MockDrivlyAPIService) GetOffersByVIN(vin string, reqData *services.ValuationRequestData) (map[string]any, error) {
+func (m *MockDrivlyAPIService) GetOffersByVIN(vin string, reqData *models.ValuationRequestData) (map[string]any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOffersByVIN", vin, reqData)
 	ret0, _ := ret[0].(map[string]any)
@@ -220,7 +220,7 @@ func (mr *MockDrivlyAPIServiceMockRecorder) GetVINInfo(vin any) *gomock.Call {
 }
 
 // GetVINPricing mocks base method.
-func (m *MockDrivlyAPIService) GetVINPricing(vin string, reqData *services.ValuationRequestData) (map[string]any, error) {
+func (m *MockDrivlyAPIService) GetVINPricing(vin string, reqData *models.ValuationRequestData) (map[string]any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVINPricing", vin, reqData)
 	ret0, _ := ret[0].(map[string]any)

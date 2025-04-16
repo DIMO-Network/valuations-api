@@ -29,7 +29,7 @@ func (p *loadValuationsCmd) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&p.wmi, "wmi", "", "WMI filter option to only get valuations for these")
 }
 
-func (p *loadValuationsCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *loadValuationsCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	p.logger.Info().Msgf("Pull VIN info, valuations and pricing from driv.ly for USA and valuations from Vincario for EUR")
 
 	// todo pending implement, re-think business / product value. This should be taken over by DINC.

@@ -2,12 +2,13 @@ package gateways
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/setnicka/graphql"
-	"strconv"
 )
 
 type telemetryAPIService struct {
@@ -88,7 +89,7 @@ func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint
 		return nil, err
 	}
 	if wrapper.Data.SignalsLatest.PowertrainTransmissionTravelledDistance.Value == 0 {
-		return nil, errors.Wrapf(ErrNotFound, "no odometer for tokenId: %s", tokenID)
+		return nil, errors.Wrapf(ErrNotFound, "no odometer for tokenId: %d", tokenID)
 	}
 	return &wrapper.Data.SignalsLatest, nil
 }
