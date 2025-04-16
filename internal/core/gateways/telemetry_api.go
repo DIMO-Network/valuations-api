@@ -2,8 +2,6 @@ package gateways
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/pkg/errors"
@@ -32,9 +30,8 @@ func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings) Telemetr
 
 // GetVinVC gets the VIN. authHeader must be full string with Bearer xxx
 func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.VinVCLatest, error) {
-	tIDStr := strconv.FormatUint(tokenID, 10)
 	req := graphql.NewRequest(`{
-vinVCLatest(tokenId:$tokenId) {
+vinVCLatest($tokenId:ID!) {
     vin
     recordedBy
     recordedAt
@@ -43,7 +40,7 @@ vinVCLatest(tokenId:$tokenId) {
     validTo
   }
 }`)
-	req.Var("tokenId", tIDStr)
+	req.Var("tokenId", tokenID)
 	req.Header.Set("Authorization", authHeader)
 
 	var wrapper struct {
@@ -64,9 +61,8 @@ vinVCLatest(tokenId:$tokenId) {
 
 // GetLatestSignals odometer and location. authHeader must be full string with Bearer xxx
 func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.SignalsLatest, error) {
-	tIDStr := strconv.FormatUint(tokenID, 10)
 	req := graphql.NewRequest(`{
-signalsLatest(tokenId:$tokenId) {
+signalsLatest($tokenId:ID!) {
 		powertrainTransmissionTravelledDistance {
 			timestamp
 			value
@@ -81,7 +77,7 @@ signalsLatest(tokenId:$tokenId) {
 		}
 	}
 }`)
-	req.Var("tokenId", tIDStr)
+	req.Var("tokenId", tokenID)
 	req.Header.Set("Authorization", authHeader)
 
 	var wrapper struct {
