@@ -3,12 +3,10 @@ package dbtest
 import (
 	"context"
 	"database/sql"
-	"net/http"
-	"strings"
-
-	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"net/http"
+	"strings"
 
 	_ "embed" //nolint
 
@@ -149,10 +147,36 @@ func Logger() *zerolog.Logger {
 func SetupAppFiber(logger zerolog.Logger) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return helpers.ErrorHandler(c, err, &logger, false)
+			return ErrorHandler(c, err, &logger, false)
 		},
 	})
 	return app
+}
+
+// ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
+func ErrorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction bool) error {
+	code := fiber.StatusInternalServerError // Default 500 statuscode
+
+	var e *fiber.Error
+	fiberTypeErr := errors.As(err, &e)
+	if fiberTypeErr {
+		// Override status code if fiber.Error type
+		code = e.Code
+	}
+	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+
+	if code != fiber.StatusNotFound {
+		logger.Err(err).Msg("caught an error from http request")
+	}
+
+	// return an opaque error if we're in a higher level environment and we haven't specified an fiber type err.
+	if !fiberTypeErr && isProduction {
+		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error")
+	}
+	return c.Status(code).JSON(fiber.Map{
+		"code":    code,
+		"message": err.Error(),
+	})
 }
 
 // AuthInjectorTestHandler injects fake jwt with sub

@@ -145,8 +145,13 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
 
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+		CountryCode: "USA",
+	}, nil)
+
 	// test
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, tokenID)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 
@@ -172,9 +177,13 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
 	// tokenId not being set
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, tokenID)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 
@@ -205,8 +214,12 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, &s.pdb)
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, tokenID)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
@@ -224,8 +237,12 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
 	}, &s.pdb)
-
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, tokenID)
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&LocationResponse{
+		CountryCode: "USA",
+	}, nil)
+	
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
