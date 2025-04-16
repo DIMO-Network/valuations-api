@@ -44,8 +44,8 @@ func NewDrivlyValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger,
 		dbs:          DBS,
 		log:          log,
 		drivlySvc:    NewDrivlyAPIService(settings, DBS),
-		identityAPI:  gateways.NewIdentityAPIService(log, settings, nil),
-		telemetryAPI: gateways.NewTelemetryAPI(log, settings, nil),
+		identityAPI:  gateways.NewIdentityAPIService(log, settings),
+		telemetryAPI: gateways.NewTelemetryAPI(log, settings),
 		locationSvc:  NewLocationService(DBS, settings, log),
 	}
 }
@@ -58,7 +58,6 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 		return core.ErrorDataPullStatus, fmt.Errorf("invalid VIN %s", vin)
 	}
 
-	// todo switch to use identity-api
 	deviceDef, err := d.identityAPI.GetDefinition(definitionID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err

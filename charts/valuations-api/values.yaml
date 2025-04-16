@@ -54,6 +54,7 @@ env:
   EVENTS_TOPIC: topic.event
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
   IDENTITY_API_URL: https://identity-api.dev.dimo.zone/query
+  TELEMETRY_API_URL: https://telemetry-api.dev.dimo.zone/query
 service:
   type: ClusterIP
   ports:

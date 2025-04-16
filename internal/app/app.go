@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"github.com/DIMO-Network/shared/pkg/payloads"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 	"net"
 	"os"
@@ -10,16 +11,15 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/DIMO-Network/shared"
 	"github.com/IBM/sarama"
 	"github.com/burdiyan/kafkautil"
 	"github.com/lovoo/goka"
 
-	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/DIMO-Network/shared/pkg/middleware/privilegetoken"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/DIMO-Network/shared/db"
-	"github.com/DIMO-Network/shared/privileges"
+	"github.com/DIMO-Network/shared/pkg/db"
+	"github.com/DIMO-Network/shared/pkg/privileges"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
@@ -46,18 +46,18 @@ import (
 )
 
 func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, identity gateways.IdentityAPI,
-	userDeviceSvc services.UserDeviceAPIService) {
+	userDeviceSvc services.UserDeviceAPIService, telemetry gateways.TelemetryAPI, locationSvc services.LocationService) {
 
 	// mint events consumer to request valuations and offers for new paired vehicles
 	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
-	startEventsConsumer(settings, logger, pdb, userDeviceSvc, identity, deviceDataSvc)
+	startEventsConsumer(settings, logger, pdb, identity, telemetry)
 
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
 
-	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings, ddSvc, userDeviceSvc)
-	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, userDeviceSvc)
-	app := startWebAPI(logger, settings, userDeviceSvc, drivlySvc, vincarioSvc)
+	drivlySvc := services.NewDrivlyValuationService(pdb.DBS, &logger, settings)
+	vincarioSvc := services.NewVincarioValuationService(pdb.DBS, &logger, settings, identity)
+	app := startWebAPI(logger, settings, userDeviceSvc, drivlySvc, vincarioSvc, identity, telemetry, locationSvc)
 	// nolint
 	defer app.Shutdown()
 
@@ -69,16 +69,16 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 }
 
 // startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
-func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, userDeviceSvc services.UserDeviceAPIService) {
+func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, identity gateways.IdentityAPI, telemetry gateways.TelemetryAPI) {
 
-	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, userDeviceSvc, ddSvc, deviceDataSvc)
+	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, telemetry, identity)
 	//goka setup
 	sc := goka.DefaultConfig()
 	sc.Version = sarama.V2_8_1_0
 	goka.ReplaceGlobalConfig(sc)
 
 	group := goka.DefineGroup("valuation-trigger-consumer",
-		goka.Input(goka.Stream(settings.EventsTopic), new(shared.JSONCodec[shared.CloudEvent[json.RawMessage]]), ingestSvc.ProcessVehicleMintMsg),
+		goka.Input(goka.Stream(settings.EventsTopic), new(payloads.JSONCodec[payloads.CloudEvent[json.RawMessage]]), ingestSvc.ProcessVehicleMintMsg),
 	)
 
 	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
@@ -141,7 +141,8 @@ func startGRCPServer(pdb db.Store, logger zerolog.Logger, settings *config.Setti
 }
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc services.UserDeviceAPIService,
-	drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService) *fiber.App {
+	drivlySvc services.DrivlyValuationService, vincarioSvc services.VincarioValuationService, identity gateways.IdentityAPI,
+	telemetry gateways.TelemetryAPI, locationSvc services.LocationService) *fiber.App {
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -163,7 +164,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, drivlySvc, vincarioSvc)
+	vehiclesController := controllers.NewVehiclesController(&logger, userDeviceSvc, drivlySvc, vincarioSvc, identity, telemetry, locationSvc)
 
 	// secured paths
 	privilegeAuth := jwtware.New(jwtware.Config{

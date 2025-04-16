@@ -41,7 +41,8 @@ type Settings struct {
 	EventsTopic  string `yaml:"EVENTS_TOPIC"`
 	KafkaBrokers string `yaml:"KAFKA_BROKERS"`
 
-	IdentityAPIURL url.URL `yaml:"IDENTITY_API_URL"`
+	IdentityAPIURL  url.URL `yaml:"IDENTITY_API_URL"`
+	TelemetryAPIURL url.URL `yaml:"TELEMETRY_API_URL"`
 }
 
 func (s *Settings) IsProduction() bool {

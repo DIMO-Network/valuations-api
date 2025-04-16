@@ -4,22 +4,17 @@ import (
 	"context"
 	"flag"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
-	"github.com/DIMO-Network/valuations-api/internal/core/commands"
-	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	"github.com/google/subcommands"
 	"github.com/rs/zerolog"
 )
 
 type loadValuationsCmd struct {
-	logger        zerolog.Logger
-	settings      config.Settings
-	pdb           db.Store
-	ddSvc         services.DeviceDefinitionsAPIService
-	userDeviceSvc services.UserDeviceAPIService
-	deviceDataSvc services.UserDeviceDataAPIService
-	wmi           string
+	logger   zerolog.Logger
+	settings config.Settings
+	pdb      db.Store
+	wmi      string
 }
 
 func (*loadValuationsCmd) Name() string { return "pull-valuations" }
@@ -37,13 +32,8 @@ func (p *loadValuationsCmd) SetFlags(f *flag.FlagSet) {
 func (p *loadValuationsCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	p.logger.Info().Msgf("Pull VIN info, valuations and pricing from driv.ly for USA and valuations from Vincario for EUR")
 
-	handler := commands.NewLoadVinVerifiedValuationCommandHandler(p.pdb.DBS, p.logger, &p.settings, p.userDeviceSvc, p.ddSvc, p.deviceDataSvc)
-	err := handler.Execute(ctx, &commands.LoadVinVerifiedValuationCommandRequest{
-		WMI: p.wmi,
-	})
-	if err != nil {
-		p.logger.Fatal().Err(err).Msg("error trying to pull valuations")
-	}
+	// todo pending implement, re-think business / product value. This should be taken over by DINC.
+	// Send a notification when new valuation comes up. Run valuations every 3 months.
 
 	return subcommands.ExitSuccess
 }

@@ -39,7 +39,7 @@ type ValuationRequestData struct {
 }
 
 type drivlyAPIService struct {
-	Settings        *config.Settings
+	settings        *config.Settings
 	httpClientVIN   http.ClientWrapper
 	httpClientOffer http.ClientWrapper
 	dbs             func() *db.ReaderWriter
@@ -50,11 +50,11 @@ func NewDrivlyAPIService(settings *config.Settings, dbs func() *db.ReaderWriter)
 		panic("Drivly configuration not set")
 	}
 	h := map[string]string{"x-api-key": settings.DrivlyAPIKey}
-	hcwv, _ := http.NewClientWrapper(settings.DrivlyVINAPIURL, "", 10*time.Second, h, true)
-	hcwo, _ := http.NewClientWrapper(settings.DrivlyOfferAPIURL, "", 120*time.Second, h, true)
+	hcwv, _ := http.NewClientWrapper(settings.DrivlyVINAPIURL, "", 120*time.Second, h, true)
+	hcwo, _ := http.NewClientWrapper(settings.DrivlyOfferAPIURL, "", 240*time.Second, h, true)
 
 	return &drivlyAPIService{
-		Settings:        settings,
+		settings:        settings,
 		httpClientVIN:   hcwv,
 		httpClientOffer: hcwo,
 		dbs:             dbs,
@@ -75,7 +75,7 @@ func (ds *drivlyAPIService) GetVINInfo(vin string) (map[string]interface{}, erro
 // GetVINPricing mileage is not sent if nil and zipcode is not sent if length is not equal to 5
 func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *ValuationRequestData) (map[string]any, error) {
 	params := url.Values{}
-	if reqData.Mileage != nil {
+	if reqData.Mileage != nil && *reqData.Mileage < 400000 {
 		params.Add("mileage", fmt.Sprint(int(*reqData.Mileage)))
 	}
 	if reqData.ZipCode != nil && len(*reqData.ZipCode) == 5 { // US 5 digit zip codes only
@@ -99,7 +99,7 @@ func (ds *drivlyAPIService) GetVINPricing(vin string, reqData *ValuationRequestD
 // GetOffersByVIN mileage is not sent if nil and zipcode is not sent if length is not equal to 5
 func (ds *drivlyAPIService) GetOffersByVIN(vin string, reqData *ValuationRequestData) (map[string]interface{}, error) {
 	params := url.Values{}
-	if reqData.Mileage != nil {
+	if reqData.Mileage != nil && *reqData.Mileage < 400000 {
 		params.Add("mileage", fmt.Sprint(int(*reqData.Mileage)))
 	}
 	if reqData.ZipCode != nil && len(*reqData.ZipCode) == 5 { // US 5 digit zip codes only
@@ -310,7 +310,6 @@ type DrivlyVINSummary struct {
 	VRoom     map[string]interface{}
 }
 
-// todo add tests to this
 func executeAPI(httpClient http.ClientWrapper, path string) (map[string]interface{}, error) {
 	res, err := httpClient.ExecuteRequest(path, "GET", nil)
 	if res == nil {
