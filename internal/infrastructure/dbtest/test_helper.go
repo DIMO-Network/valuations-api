@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"

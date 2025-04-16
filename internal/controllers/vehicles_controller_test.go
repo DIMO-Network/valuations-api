@@ -12,12 +12,10 @@ import (
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
 	"github.com/gofiber/fiber/v2"
-	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -104,28 +102,27 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 	s.drivlyValuationSvc.EXPECT().PullValuation(gomock.Any(), tokenID, "ford_escape_2020", vin).
 		Return(core.PulledValuationDrivlyStatus, nil)
 
-	request := dbtest.BuildRequest("POST", fmt.Sprintf("/vehicles/%s/valuations", tokenID), "")
+	request := dbtest.BuildRequest("POST", fmt.Sprintf("/vehicles/%d/valuations", tokenID), "")
 	response, _ := s.app.Test(request)
 
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
-func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly2() {
-	// this is the other format we're seeing coming from drivly for pricing
-	// arrange db, insert some user_devices
-	tokenID := "1234567890"
-	udID := ksuid.New().String()
-	vin := "vinny"
+func (s *VehiclesControllerTestSuite) TestGetValuations_Drivly2() {
+	tokenID := uint64(12345)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Return(&grpc.UserDevice{
-		Id:           udID,
-		UserId:       userID,
-		VinConfirmed: true,
-		Vin:          &vin,
-		CountryCode:  "USA",
+	s.identity.EXPECT().GetVehicle(tokenID).Return(gateways.Vehicle{
+		Id: "xxx",
+		Definition: struct {
+			Id    string `json:"id"`
+			Make  string `json:"make"`
+			Model string `json:"model"`
+			Year  int    `json:"year"`
+		}{Id: "ford_escape_2022"},
+		Owner: "0x123",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceValuationsByTokenID(gomock.Any(), gomock.Any(), "USA", 10, udID).Return(&core.DeviceValuation{
+	s.userDeviceSvc.EXPECT().GetUserDeviceValuations(gomock.Any(), tokenID).Return(&core.DeviceValuation{
 		ValuationSets: []core.ValuationSet{
 			{
 				Vendor:           "drivly",
@@ -150,27 +147,28 @@ func (s *VehiclesControllerTestSuite) TestGetDeviceValuations_Drivly2() {
 		},
 	}, nil)
 
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%s/valuations", tokenID), "")
+	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%d/valuations", tokenID), "")
 	response, _ := s.app.Test(request)
 
 	assert.Equal(s.T(), fiber.StatusOK, response.StatusCode)
 }
 
-func (s *VehiclesControllerTestSuite) TestGetDeviceOffers() {
+func (s *VehiclesControllerTestSuite) TestGetOffers() {
 
-	tokenID := "1234567890"
-	udID := ksuid.New().String()
-	vin := "vinny"
+	tokenID := uint64(12345)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Return(&grpc.UserDevice{
-		Id:           udID,
-		UserId:       userID,
-		VinConfirmed: true,
-		Vin:          &vin,
-		CountryCode:  "USA",
+	s.identity.EXPECT().GetVehicle(tokenID).Return(gateways.Vehicle{
+		Id: "xxx",
+		Definition: struct {
+			Id    string `json:"id"`
+			Make  string `json:"make"`
+			Model string `json:"model"`
+			Year  int    `json:"year"`
+		}{Id: "ford_escape_2022"},
+		Owner: "0x123",
 	}, nil)
 
-	s.userDeviceSvc.EXPECT().GetUserDeviceOffersByTokenID(gomock.Any(), gomock.Any(), 10, udID).Return(&core.DeviceOffer{
+	s.userDeviceSvc.EXPECT().GetUserDeviceOffers(gomock.Any(), tokenID).Return(&core.DeviceOffer{
 		OfferSets: []core.OfferSet{
 			{
 				Source:  "drivly",
@@ -182,7 +180,7 @@ func (s *VehiclesControllerTestSuite) TestGetDeviceOffers() {
 		},
 	}, nil)
 
-	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%s/offers", tokenID), "")
+	request := dbtest.BuildRequest("GET", fmt.Sprintf("/vehicles/%d/offers", tokenID), "")
 	response, err := s.app.Test(request)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), fiber.StatusOK, response.StatusCode)

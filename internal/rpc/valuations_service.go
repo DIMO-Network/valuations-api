@@ -3,7 +3,7 @@ package rpc
 import (
 	"context"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
 	"github.com/rs/zerolog"
@@ -150,7 +150,7 @@ func (s *valuationsService) GetUserDeviceValuation(ctx context.Context, req *pb.
 
 func (s *valuationsService) GetUserDeviceOffer(ctx context.Context, req *pb.DeviceOfferRequest) (*pb.DeviceOffer, error) {
 
-	offers, err := s.userDeviceService.GetUserDeviceOffers(ctx, req.UserDeviceId)
+	offers, err := s.userDeviceService.GetUserDeviceOffers(ctx, req.TokenId)
 
 	if err != nil {
 		return nil, err
