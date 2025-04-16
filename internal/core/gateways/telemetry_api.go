@@ -2,6 +2,7 @@ package gateways
 
 import (
 	"context"
+
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	coremodels "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/pkg/errors"
@@ -31,7 +32,7 @@ func NewTelemetryAPI(logger *zerolog.Logger, settings *config.Settings) Telemetr
 // GetVinVC gets the VIN. authHeader must be full string with Bearer xxx
 func (i *telemetryAPIService) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.VinVCLatest, error) {
 	req := graphql.NewRequest(`{
-vinVCLatest($tokenId:ID!) {
+vinVCLatest(tokenId:ID!) {
     vin
     recordedBy
     recordedAt
@@ -62,7 +63,7 @@ vinVCLatest($tokenId:ID!) {
 // GetLatestSignals odometer and location. authHeader must be full string with Bearer xxx
 func (i *telemetryAPIService) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*coremodels.SignalsLatest, error) {
 	req := graphql.NewRequest(`{
-signalsLatest($tokenId:ID!) {
+signalsLatest(tokenId:ID!) {
 		powertrainTransmissionTravelledDistance {
 			timestamp
 			value

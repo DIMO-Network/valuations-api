@@ -4,11 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
+	"testing"
+
 	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"go.uber.org/mock/gomock"
-	"os"
-	"testing"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/rs/zerolog"
