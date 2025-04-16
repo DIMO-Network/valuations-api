@@ -4,7 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"math/big"
+	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
+	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
+	"go.uber.org/mock/gomock"
 	"os"
 	"testing"
 
@@ -13,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/dbtest"
@@ -29,10 +31,12 @@ const migrationsDirRelPath = "../../infrastructure/db/migrations"
 
 type UserDeviceServiceTestSuite struct {
 	suite.Suite
-	pdb       db.Store
-	container testcontainers.Container
-	ctx       context.Context
-	svc       UserDeviceAPIService
+	pdb         db.Store
+	container   testcontainers.Container
+	ctx         context.Context
+	svc         UserDeviceAPIService
+	locationSvc *mock_services.MockLocationService
+	telemetry   *mock_gateways.MockTelemetryAPI
 }
 
 //go:embed test_drivly_offers_by_vin.json
@@ -55,14 +59,11 @@ func (s *UserDeviceServiceTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 	s.pdb, s.container = dbtest.StartContainerDatabase(s.ctx, "valuations_api", s.T(), migrationsDirRelPath)
 	logger := dbtest.Logger()
+	mockCtrl := gomock.NewController(s.T())
+	s.locationSvc = mock_services.NewMockLocationService(mockCtrl)
+	s.telemetry = mock_gateways.NewMockTelemetryAPI(mockCtrl)
 
-	s.svc = NewUserDeviceService(nil, s.pdb.DBS, logger)
-
-	var err error
-
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.svc = NewUserDeviceService(nil, s.pdb.DBS, logger, s.locationSvc, s.telemetry)
 }
 
 func (s *UserDeviceServiceTestSuite) SetupTest() {
@@ -97,10 +98,10 @@ func Test_projectValuation(t *testing.T) {
 		Logger()
 
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
+	tokenID := uint64(12334)
 	vin := "vinny"
 	// this is the one that in prod would return a valuation that was below what made sense, like if not averaging right
-	valuation := setupCreateValuationsData(t, ddID, udID, vin, map[string][]byte{
+	valuation := setupCreateValuationsData(t, tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyValuations3JSON),
 	}, nil)
 
@@ -120,15 +121,15 @@ func Test_projectValuation_empty(t *testing.T) {
 		Logger()
 
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
 	vin := "vinny"
+	tokenID := uint64(12334)
 
 	v := models.Valuation{
-		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(ddID),
-		Vin:                vin,
-		UserDeviceID:       null.StringFrom(udID),
-		OfferMetadata:      null.JSONFrom([]byte(`{}`)),
+		ID:            ksuid.New().String(),
+		DefinitionID:  null.StringFrom(ddID),
+		Vin:           vin,
+		TokenID:       types.NewNullDecimal(new(decimal.Big).SetUint64(tokenID)),
+		OfferMetadata: null.JSONFrom([]byte(`{}`)),
 	}
 	val := projectValuation(&logger, &v, "USA")
 	assert.Nil(t, val, "if no valuations should return nil")
@@ -137,15 +138,24 @@ func Test_projectValuation_empty(t *testing.T) {
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	// setup
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
 	vin := "vinny"
+	tokenID := uint64(12334)
 
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
+	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
 	// test
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 
@@ -162,19 +172,27 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeInAverage)
 }
 
-func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTokenIDFromUDID() {
+func (s *UserDeviceServiceTestSuite) TestGetValuations_setsTokenIDFromUDID() {
 	// setup
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
 	vin := "vinny"
-	tID := big.NewInt(123)
+	tokenID := uint64(12334)
 
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
+	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
 	// tokenId not being set
-	valuations, err := s.svc.GetUserDeviceValuationsByTokenID(s.ctx, tID, "USA", 10, udID)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 
@@ -191,22 +209,27 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeInAverage)
 
 	// lookup in db by tokenId and should exist
-	tokenID := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tID, 0))
-	valuation, err := models.Valuations(models.ValuationWhere.TokenID.EQ(tokenID)).One(s.ctx, s.pdb.DBS().Reader)
+	tid := types.NewNullDecimal(new(decimal.Big).SetUint64(tokenID))
+	valuation, err := models.Valuations(models.ValuationWhere.TokenID.EQ(tid)).One(s.ctx, s.pdb.DBS().Reader)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), valuation)
-	assert.Equal(s.T(), valuation.UserDeviceID.String, udID)
+	u, _ := valuation.TokenID.Uint64()
+	assert.Equal(s.T(), u, tokenID)
 }
 
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
+	tokenID := uint64(12334)
 	vin := "vinny"
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
+	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, &s.pdb)
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, tokenID).Return(&core.LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
@@ -218,14 +241,23 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
+	tokenID := uint64(12334)
 	vin := "vinny"
 
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
+	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
 	}, &s.pdb)
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
+		CountryCode: "USA",
+	}, nil)
 
-	valuations, err := s.svc.GetUserDeviceValuations(s.ctx, udID, vin)
+	valuations, err := s.svc.GetValuations(s.ctx, tokenID, "caca")
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, len(valuations.ValuationSets))
@@ -245,57 +277,25 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 	// arrange db, insert some user_devices
 	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
 	vin := "vinny"
+	tokenID := uint64(12334)
 
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
+	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
 	}, &s.pdb)
+	all, err2 := models.Valuations().All(s.ctx, s.pdb.DBS().Reader)
+	if err2 != nil {
+		s.T().Fatal(err2)
+	}
+	for _, v := range all {
+		u, _ := v.TokenID.Uint64()
 
-	deviceOffers, err := s.svc.GetUserDeviceOffers(s.ctx, udID)
-
-	assert.NoError(s.T(), err)
-
-	assert.Equal(s.T(), 1, len(deviceOffers.OfferSets))
-	assert.Equal(s.T(), "drivly", deviceOffers.OfferSets[0].Source)
-	assert.Equal(s.T(), 3, len(deviceOffers.OfferSets[0].Offers))
-
-	var vroomOffer core.Offer
-	var carvanaOffer core.Offer
-	var carmaxOffer core.Offer
-
-	for _, offer := range deviceOffers.OfferSets[0].Offers {
-		switch offer.Vendor {
-		case "vroom":
-			vroomOffer = offer
-		case "carvana":
-			carvanaOffer = offer
-		case "carmax":
-			carmaxOffer = offer
-		}
+		fmt.Printf("tokenId: %d\n", u)
 	}
 
-	assert.Equal(s.T(), "Error in v1/acquisition/appraisal POST",
-		vroomOffer.Error)
-	assert.Equal(s.T(), 10123, carvanaOffer.Price)
-	assert.Equal(s.T(), "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer.",
-		carmaxOffer.DeclineReason)
-}
+	deviceOffers, err := s.svc.GetOffers(s.ctx, tokenID)
 
-func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffersByTokenID_setsTokenIdFromUDID() {
-	// arrange db, insert some user_devices
-	ddID := ksuid.New().String()
-	udID := ksuid.New().String()
-	vin := "vinny"
-	tID := big.NewInt(123)
-
-	// tokenId not being set
-	_ = setupCreateValuationsData(s.T(), ddID, udID, vin, map[string][]byte{
-		"OfferMetadata": []byte(testDrivlyOffersJSON),
-	}, &s.pdb)
-
-	deviceOffers, err := s.svc.GetUserDeviceOffersByTokenID(s.ctx, tID, 10, udID)
-	require.NoError(s.T(), err)
+	assert.NoError(s.T(), err)
 
 	require.Equal(s.T(), 1, len(deviceOffers.OfferSets))
 	assert.Equal(s.T(), "drivly", deviceOffers.OfferSets[0].Source)
@@ -321,22 +321,16 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffersByTokenID_setsTokenI
 	assert.Equal(s.T(), 10123, carvanaOffer.Price)
 	assert.Equal(s.T(), "Make[Ford],Model[Mustang Mach-E],Year[2022] is not eligible for offer.",
 		carmaxOffer.DeclineReason)
-	// lookup in db by tokenId and should exist
-	tokenID := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tID, 0))
-	offer, err := models.Valuations(models.ValuationWhere.TokenID.EQ(tokenID)).One(s.ctx, s.pdb.DBS().Reader)
-	require.NoError(s.T(), err)
-	assert.NotNil(s.T(), offer)
-	assert.Equal(s.T(), offer.UserDeviceID.String, udID)
 }
 
 // setupCreateValuationsData creates valuation requests with some standards. request mileage: 49957, zip: 48216. if pdb nil just returns
-func setupCreateValuationsData(t *testing.T, ddID, userDeviceID, vin string, md map[string][]byte, pdb *db.Store) *models.Valuation {
+func setupCreateValuationsData(t *testing.T, tokenID uint64, ddID, vin string, md map[string][]byte, pdb *db.Store) *models.Valuation {
 	val := models.Valuation{
-		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(ddID),
-		Vin:                vin,
-		UserDeviceID:       null.StringFrom(userDeviceID),
-		RequestMetadata:    null.JSONFrom([]byte(`{"mileage":49957,"zipCode":"48216"}`)), // default request metadata
+		ID:              ksuid.New().String(),
+		DefinitionID:    null.StringFrom(ddID),
+		TokenID:         types.NewNullDecimal(new(decimal.Big).SetUint64(tokenID)),
+		Vin:             vin,
+		RequestMetadata: null.JSONFrom([]byte(`{"mileage":49957,"zipCode":"48216"}`)), // default request metadata
 	}
 	if rmd, ok := md["RequestMetadata"]; ok {
 		val.RequestMetadata = null.JSONFrom(rmd)

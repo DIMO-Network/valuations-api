@@ -35,3 +35,6 @@ NATS_STREAM_NAME: VALUATIONS-REQUEST
 NATS_VALUATION_SUBJECT: valuations-request
 NATS_ACK_TIMEOUT: 2m
 NATS_DURABLE_CONSUMER: valuations-request-durable
+
+IDENTITY_API_URL: https://identity-api.dev.dimo.zone/query
+TELEMETRY_API_URL: https://telemetry-api.dev.dimo.zone/query

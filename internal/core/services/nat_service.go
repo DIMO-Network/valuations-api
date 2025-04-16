@@ -10,6 +10,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+//future: migrate this to use go river (pgsql based
+
 type NATSService struct {
 	log                      *zerolog.Logger
 	JetStream                nats.JetStreamContext

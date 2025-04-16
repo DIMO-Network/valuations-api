@@ -5,6 +5,7 @@
 //
 //	mockgen -source drivly_valuation_service.go -destination mocks/drivly_valuation_service_mock.go
 //
+
 // Package mock_services is a generated GoMock package.
 package mock_services
 
@@ -40,31 +41,31 @@ func (m *MockDrivlyValuationService) EXPECT() *MockDrivlyValuationServiceMockRec
 }
 
 // PullOffer mocks base method.
-func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, userDeviceID string, tokenID uint64, vin string) (models.DataPullStatusEnum, error) {
+func (m *MockDrivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PullOffer", ctx, userDeviceID, tokenID, vin)
+	ret := m.ctrl.Call(m, "PullOffer", ctx, tokenID, vin, privJWTAuthHeader)
 	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PullOffer indicates an expected call of PullOffer.
-func (mr *MockDrivlyValuationServiceMockRecorder) PullOffer(ctx, userDeviceID, tokenID, vin any) *gomock.Call {
+func (mr *MockDrivlyValuationServiceMockRecorder) PullOffer(ctx, tokenID, vin, privJWTAuthHeader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullOffer", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullOffer), ctx, userDeviceID, tokenID, vin)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullOffer", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullOffer), ctx, tokenID, vin, privJWTAuthHeader)
 }
 
 // PullValuation mocks base method.
-func (m *MockDrivlyValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (models.DataPullStatusEnum, error) {
+func (m *MockDrivlyValuationService) PullValuation(ctx context.Context, tokenID uint64, vin, privJWTAuthHeader string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PullValuation", ctx, userDeviceID, tokenID, deviceDefinitionID, vin)
+	ret := m.ctrl.Call(m, "PullValuation", ctx, tokenID, vin, privJWTAuthHeader)
 	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PullValuation indicates an expected call of PullValuation.
-func (mr *MockDrivlyValuationServiceMockRecorder) PullValuation(ctx, userDeviceID, tokenID, deviceDefinitionID, vin any) *gomock.Call {
+func (mr *MockDrivlyValuationServiceMockRecorder) PullValuation(ctx, tokenID, vin, privJWTAuthHeader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullValuation), ctx, userDeviceID, tokenID, deviceDefinitionID, vin)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockDrivlyValuationService)(nil).PullValuation), ctx, tokenID, vin, privJWTAuthHeader)
 }

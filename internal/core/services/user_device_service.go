@@ -3,159 +3,59 @@ package services
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"log"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
 )
 
 //go:generate mockgen -source user_device_service.go -destination mocks/user_device_service_mock.go
 type UserDeviceAPIService interface {
-	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
-	GetUserDeviceByTokenID(ctx context.Context, tokenID *big.Int) (*pb.UserDevice, error)
-	GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error)
-	GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error)
-	UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error
-	GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error)
-	GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error)
-	GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error)
-	GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error)
-	CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error)
-	CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
-	LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error)
-	LastRequestDidGiveErrorByTokenID(ctx context.Context, tokenID *big.Int) (bool, error)
+	GetOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error)
+	GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*core.DeviceValuation, error)
+	CanRequestInstantOffer(ctx context.Context, tokenID uint64) (bool, error)
+	LastRequestDidGiveError(ctx context.Context, tokenID uint64) (bool, error)
 }
 
 type userDeviceAPIService struct {
-	devicesConn *grpc.ClientConn
-	dbs         func() *db.ReaderWriter
-	logger      *zerolog.Logger
+	devicesConn  *grpc.ClientConn
+	dbs          func() *db.ReaderWriter
+	logger       *zerolog.Logger
+	locationSvc  LocationService
+	telemetryAPI gateways.TelemetryAPI
 }
 
-func NewUserDeviceService(
-	devicesConn *grpc.ClientConn,
-	dbs func() *db.ReaderWriter,
-	logger *zerolog.Logger,
-) UserDeviceAPIService {
+func NewUserDeviceService(devicesConn *grpc.ClientConn, dbs func() *db.ReaderWriter, logger *zerolog.Logger,
+	locationSvc LocationService, telemetryAPI gateways.TelemetryAPI) UserDeviceAPIService {
 	return &userDeviceAPIService{
-		devicesConn: devicesConn,
-		dbs:         dbs,
-		logger:      logger,
+		devicesConn:  devicesConn,
+		dbs:          dbs,
+		logger:       logger,
+		locationSvc:  locationSvc,
+		telemetryAPI: telemetryAPI,
 	}
 }
 
-// GetUserDevice gets the userDevice from devices-api, checks in local cache first
-func (das *userDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
-	if len(userDeviceID) == 0 {
-		return nil, fmt.Errorf("user device id was empty - invalid")
-	}
-	var err error
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-
-	var userDevice *pb.UserDevice
-	userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
-		Id: userDeviceID,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return userDevice, nil
-}
-
-// GetUserDeviceByTokenID gets the userDevice from devices-api, checks in local cache first
-func (das *userDeviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID *big.Int) (*pb.UserDevice, error) {
-	var err error
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-
-	var userDevice *pb.UserDevice
-	userDevice, err = deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
-		TokenId: tokenID.Int64(),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return userDevice, nil
-}
-
-func (das *userDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, request *pb.UpdateUserDeviceMetadataRequest) error {
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-	_, err := deviceClient.UpdateUserDeviceMetadata(ctx, request)
-	return err
-}
-
-func (das *userDeviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr string) (*pb.UserDevice, error) {
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-
-	if len(ethAddr) > 2 && ethAddr[:2] == "0x" {
-		ethAddr = ethAddr[2:]
-	}
-
-	ethAddrBytes, err := hex.DecodeString(ethAddr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid ethereum address: %w", err)
-	}
-
-	userDevice, err := deviceClient.GetUserDeviceByEthAddr(ctx, &pb.GetUserDeviceByEthAddrRequest{EthAddr: ethAddrBytes})
-	if err != nil {
-		return nil, err
-	}
-
-	return userDevice, nil
-}
-
-// GetAllUserDevice gets all userDevices from devices-api
-func (das *userDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*pb.UserDevice, error) {
-	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
-	all, err := deviceClient.GetAllUserDevice(ctx, &pb.GetAllUserDeviceRequest{Wmi: wmi})
-	if err != nil {
-		return nil, err
-	}
-
-	var useDevices []*pb.UserDevice
-	for {
-		response, err := all.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("Error while receiving response: %v", err)
-		}
-
-		useDevices = append(useDevices, response)
-	}
-
-	return useDevices, nil
-}
-
-func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDeviceID string) (*core.DeviceOffer, error) {
+func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error) {
 	// Drivly data
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	drivlyVinData, err := models.Valuations(
-		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).All(ctx, das.dbs().Reader)
@@ -168,46 +68,12 @@ func (das *userDeviceAPIService) GetUserDeviceOffers(ctx context.Context, userDe
 	return offers, err
 }
 
-func (das *userDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*core.DeviceOffer, error) {
-	// Drivly data
-	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
-	drivlyVinData, err := models.Valuations(
-		models.ValuationWhere.TokenID.EQ(tid),
-		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
-		qm.OrderBy("updated_at desc"),
-		qm.Limit(take)).All(ctx, das.dbs().Reader)
-
-	if err != nil || drivlyVinData == nil {
-		if errors.Is(err, sql.ErrNoRows) || drivlyVinData == nil {
-			// fallback if nothing found to lookup by userDeviceID
-			drivlyVinData, err = models.Valuations(
-				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
-				models.ValuationWhere.OfferMetadata.IsNotNull(),
-				qm.OrderBy("updated_at desc"),
-				qm.Limit(take)).All(ctx, das.dbs().Reader)
-			if err != nil {
-				return nil, err
-			} else if len(drivlyVinData) > 0 {
-				// update the found records and set the token id
-				for _, datum := range drivlyVinData {
-					datum.TokenID = tid
-					_, err := datum.Update(ctx, das.dbs().Writer, boil.Infer())
-					if err != nil {
-						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation id: %s", datum.ID)
-					}
-				}
-			}
-		} else {
-			return nil, err
-		}
-	}
-
-	return getUserDeviceOffers(drivlyVinData)
-}
-
-func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, userDeviceID, countryCode string) (*core.DeviceValuation, error) {
+// GetValuations retrieves device valuation details based on the provided tokenID and private JWT token header include Bearer JWT.
+// It queries valuation data, retrieves the latest telemetry signals, and determines the geo-decoded location for valuation.
+func (das *userDeviceAPIService) GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*core.DeviceValuation, error) {
+	d := decimal.New(int64(tokenID), 0)
 	valuationData, err := models.Valuations(
-		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+		models.ValuationWhere.TokenID.EQ(types.NewNullDecimal(d)),
 		qm.Where("drivly_pricing_metadata is not null or vincario_metadata is not null"),
 		qm.OrderBy("updated_at desc"),
 		qm.Limit(1)).All(ctx, das.dbs().Reader)
@@ -215,43 +81,16 @@ func (das *userDeviceAPIService) GetUserDeviceValuations(ctx context.Context, us
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-
-	return buildValuationsFromSlice(das.logger, valuationData, countryCode)
-}
-
-func (das *userDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, countryCode string, take int, userDeviceID string) (*core.DeviceValuation, error) {
-	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
-	valuations, err := models.Valuations(
-		models.ValuationWhere.TokenID.EQ(tid),
-		qm.Where("drivly_pricing_metadata is not null or vincario_metadata is not null"),
-		qm.OrderBy("updated_at desc"),
-		qm.Limit(take)).All(ctx, das.dbs().Reader)
-
-	if err != nil || valuations == nil {
-		if errors.Is(err, sql.ErrNoRows) || valuations == nil {
-			// fallback if nothing found to lookup by userDeviceID
-			valuations, err = models.Valuations(
-				models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
-				qm.OrderBy("updated_at desc"),
-				qm.Limit(take)).All(ctx, das.dbs().Reader)
-			if err != nil {
-				return nil, err
-			} else if len(valuations) > 0 {
-				// update the found records and set the token id
-				for _, datum := range valuations {
-					datum.TokenID = tid
-					_, err := datum.Update(ctx, das.dbs().Writer, boil.Infer())
-					if err != nil {
-						das.logger.Err(err).Str("vin", datum.Vin).Msgf("failed to set token_id on valuation id: %s", datum.ID)
-					}
-				}
-			}
-		} else {
-			return nil, err
-		}
+	signals, err := das.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWT)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get latest signals for token %d, which are needed to get valuation", tokenID)
+	}
+	location, err := das.locationSvc.GetGeoDecodedLocation(ctx, signals, tokenID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get geo decoded location for token %d, which are needed to get valuation", tokenID)
 	}
 
-	return buildValuationsFromSlice(das.logger, valuations, countryCode)
+	return buildValuationsFromSlice(das.logger, valuationData, location.CountryCode)
 }
 
 func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
@@ -410,25 +249,10 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 	return nil
 }
 
-func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, userDeviceID string) (bool, error) {
-
+func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, tokenID uint64) (bool, error) {
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	existingOfferData, err := models.Valuations(
-		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
-		models.ValuationWhere.OfferMetadata.IsNotNull(),
-		qm.OrderBy("updated_at desc"), qm.Limit(1)).
-		One(ctx, das.dbs().Reader)
-
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return false, err
-	}
-
-	return canRequestInstantOffer(existingOfferData)
-}
-
-func (das *userDeviceAPIService) CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error) {
-	tid := types.NewNullDecimal(new(decimal.Big).SetBigMantScale(tokenID, 0))
-	existingOfferData, err := models.Valuations(
-		models.ValuationWhere.TokenID.EQ(tid),
+		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(),
 		qm.OrderBy("updated_at desc"), qm.Limit(1)).
 		One(ctx, das.dbs().Reader)
@@ -450,10 +274,10 @@ func canRequestInstantOffer(existingOfferData *models.Valuation) (bool, error) {
 	return true, nil
 }
 
-func (das *userDeviceAPIService) LastRequestDidGiveError(ctx context.Context, userDeviceID string) (bool, error) {
-
+func (das *userDeviceAPIService) LastRequestDidGiveError(ctx context.Context, tokenID uint64) (bool, error) {
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	existingOfferData, err := models.Valuations(
-		models.ValuationWhere.UserDeviceID.EQ(null.StringFrom(userDeviceID)),
+		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(),
 		qm.OrderBy("updated_at desc"), qm.Limit(1)).
 		One(ctx, das.dbs().Reader)

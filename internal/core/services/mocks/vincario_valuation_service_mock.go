@@ -5,6 +5,7 @@
 //
 //	mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go
 //
+
 // Package mock_services is a generated GoMock package.
 package mock_services
 
@@ -40,16 +41,16 @@ func (m *MockVincarioValuationService) EXPECT() *MockVincarioValuationServiceMoc
 }
 
 // PullValuation mocks base method.
-func (m *MockVincarioValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (models.DataPullStatusEnum, error) {
+func (m *MockVincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, vin string) (models.DataPullStatusEnum, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PullValuation", ctx, userDeviceID, tokenID, deviceDefinitionID, vin)
+	ret := m.ctrl.Call(m, "PullValuation", ctx, tokenID, vin)
 	ret0, _ := ret[0].(models.DataPullStatusEnum)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // PullValuation indicates an expected call of PullValuation.
-func (mr *MockVincarioValuationServiceMockRecorder) PullValuation(ctx, userDeviceID, tokenID, deviceDefinitionID, vin any) *gomock.Call {
+func (mr *MockVincarioValuationServiceMockRecorder) PullValuation(ctx, tokenID, vin any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockVincarioValuationService)(nil).PullValuation), ctx, userDeviceID, tokenID, deviceDefinitionID, vin)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PullValuation", reflect.TypeOf((*MockVincarioValuationService)(nil).PullValuation), ctx, tokenID, vin)
 }

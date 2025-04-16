@@ -7,11 +7,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/settings"
+	"github.com/DIMO-Network/valuations-api/internal/app"
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
+	"github.com/DIMO-Network/valuations-api/internal/core/services"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/google/subcommands"
 
-	"github.com/DIMO-Network/shared"
-	"github.com/DIMO-Network/valuations-api/internal/api"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/rs/zerolog"
 )
@@ -27,21 +32,21 @@ func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
 	ctx := context.Background()
 
-	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
+	cfg, err := settings.LoadConfig[config.Settings]("settings.yaml")
 	if err != nil {
 		log.Fatal("could not load settings: $s", err)
 	}
-	level, err := zerolog.ParseLevel(settings.LogLevel)
+	level, err := zerolog.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.Fatal("could not parse log level: $s", err)
 	}
 	logger := zerolog.New(os.Stdout).Level(level).With().
 		Timestamp().
-		Str("app", settings.ServiceName).
+		Str("app", cfg.ServiceName).
 		Str("git-sha1", gitSha1).
 		Logger()
 
-	pdb := db.NewDbConnectionFromSettings(ctx, &settings.DB, true)
+	pdb := db.NewDbConnectionFromSettings(ctx, &cfg.DB, true)
 	// check db ready, this is not ideal btw, the db connection handler would be nicer if it did this.
 	totalTime := 0
 	for !pdb.IsReady() {
@@ -51,34 +56,31 @@ func main() {
 		time.Sleep(time.Second)
 		totalTime++
 	}
+	identityAPI := gateways.NewIdentityAPIService(&logger, &cfg)
+	telemetryAPI := gateways.NewTelemetryAPI(&logger, &cfg)
+	locationSvc := services.NewLocationService(pdb.DBS, &cfg, &logger)
+	devicesConn, err := grpc.NewClient(cfg.DevicesGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to dial devices grpc")
+	}
+	userDeviceSvc := services.NewUserDeviceService(devicesConn, pdb.DBS, &logger, locationSvc, telemetryAPI)
 
-	deps := newDependencyContainer(&settings, logger, pdb.DBS)
-
-	deviceDefsSvc, deviceDefsConn := deps.getDeviceDefinitionService()
-	defer deviceDefsConn.Close()
-	devicesSvc, devicesConn := deps.getDeviceService()
 	defer devicesConn.Close()
-	deviceDataSvc, devicedataConn := deps.getDeviceDataService()
-	defer devicedataConn.Close()
 
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
 	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "")
+	subcommands.Register(&migrateDBCmd{logger: logger, settings: cfg}, "")
 	subcommands.Register(&loadValuationsCmd{logger: logger,
-		settings:      settings,
-		deviceDataSvc: deviceDataSvc,
-		userDeviceSvc: devicesSvc,
-		ddSvc:         deviceDefsSvc,
-		pdb:           pdb,
+		settings: cfg,
+		pdb:      pdb,
 	}, "")
 
 	// Run API
 	if len(os.Args) == 1 {
-		api.Run(ctx, pdb, logger, &settings, deviceDefsSvc, devicesSvc, deviceDataSvc)
+		app.Run(ctx, pdb, logger, &cfg, identityAPI, userDeviceSvc, telemetryAPI, locationSvc)
 	} else {
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))
 	}
-
 }

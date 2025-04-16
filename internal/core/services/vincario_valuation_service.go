@@ -3,13 +3,15 @@ package services
 import (
 	"context"
 
+	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
+
 	"github.com/ericlagergren/decimal"
 	"github.com/volatiletech/sqlboiler/v4/types"
 
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	core "github.com/DIMO-Network/valuations-api/internal/core/models"
 	"github.com/DIMO-Network/valuations-api/internal/infrastructure/db/models"
@@ -24,38 +26,44 @@ import (
 //go:generate mockgen -source vincario_valuation_service.go -destination mocks/vincario_valuation_service_mock.go
 
 type VincarioValuationService interface {
-	PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error)
+	PullValuation(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error)
 }
 
 type vincarioValuationService struct {
 	dbs         func() *db.ReaderWriter
 	log         *zerolog.Logger
 	vincarioSvc VincarioAPIService
-	udSvc       UserDeviceAPIService
+	identityAPI gateways.IdentityAPI
 }
 
-func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, udSvc UserDeviceAPIService) VincarioValuationService {
+func NewVincarioValuationService(DBS func() *db.ReaderWriter, log *zerolog.Logger, settings *config.Settings, identityAPI gateways.IdentityAPI) VincarioValuationService {
 	return &vincarioValuationService{
 		dbs:         DBS,
 		log:         log,
 		vincarioSvc: NewVincarioAPIService(settings, log),
-		udSvc:       udSvc,
+		identityAPI: identityAPI,
 	}
 }
 
-func (d *vincarioValuationService) PullValuation(ctx context.Context, userDeviceID string, tokenID uint64, deviceDefinitionID, vin string) (core.DataPullStatusEnum, error) {
+// PullValuation ideally we pass country code into here
+func (d *vincarioValuationService) PullValuation(ctx context.Context, tokenID uint64, vin string) (core.DataPullStatusEnum, error) {
 	const repullWindow = time.Hour * 24 * 30 // one month
 	if len(vin) != 17 {
 		return core.ErrorDataPullStatus, errors.Errorf("invalid VIN %s", vin)
 	}
 
 	// make sure userdevice exists
-	ud, err := d.udSvc.GetUserDevice(ctx, userDeviceID)
+	vehicle, err := d.identityAPI.GetVehicle(tokenID)
 	if err != nil {
 		return core.ErrorDataPullStatus, err
 	}
 	// do not pull for USA
-	if strings.EqualFold(ud.CountryCode, "USA") {
+	gloc, _ := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, d.dbs().Reader)
+	countryCode := ""
+	if gloc != nil {
+		countryCode = gloc.Country.String
+	}
+	if strings.EqualFold(countryCode, "USA") {
 		return core.SkippedDataPullStatus, nil
 	}
 
@@ -72,11 +80,10 @@ func (d *vincarioValuationService) PullValuation(ctx context.Context, userDevice
 	}
 
 	externalVinData := &models.Valuation{
-		ID:                 ksuid.New().String(),
-		DeviceDefinitionID: null.StringFrom(deviceDefinitionID),
-		Vin:                vin,
-		UserDeviceID:       null.StringFrom(userDeviceID),
-		// we need a better way to do this that can just cast straight from a uint64
+		ID:           ksuid.New().String(),
+		DefinitionID: null.StringFrom(vehicle.Definition.ID),
+		Vin:          vin,
+		// at some point change the db datatype to bigint
 		TokenID: types.NewNullDecimal(decimal.New(int64(tokenID), 0)),
 	}
 

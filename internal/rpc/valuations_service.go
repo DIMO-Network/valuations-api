@@ -2,8 +2,9 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/core/services"
 	pb "github.com/DIMO-Network/valuations-api/pkg/grpc"
 	"github.com/rs/zerolog"
@@ -110,55 +111,49 @@ func (s *valuationsService) GetAllUserDeviceValuation(ctx context.Context, _ *em
 	}, nil
 }
 
-func (s *valuationsService) GetUserDeviceValuation(ctx context.Context, req *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
+func (s *valuationsService) GetUserDeviceValuation(_ context.Context, _ *pb.DeviceValuationRequest) (*pb.DeviceValuation, error) {
 
-	udi := req.UserDeviceId
+	return nil, fmt.Errorf("no longer supported, must provide Privilege token")
 
-	ud, err := s.userDeviceService.GetUserDevice(ctx, udi)
-
-	if err != nil {
-		return nil, err
-	}
-
-	valuations, err := s.userDeviceService.GetUserDeviceValuations(ctx, udi, ud.CountryCode)
-
-	if err != nil {
-		return nil, err
-	}
-
-	rpcValuations := pb.DeviceValuation{
-		ValuationSets: make([]*pb.ValuationSet, len(valuations.ValuationSets)),
-	}
-
-	for i, v := range valuations.ValuationSets {
-		rpcValuations.ValuationSets[i] = &pb.ValuationSet{
-			Vendor:           v.Vendor,
-			Updated:          v.Updated,
-			Mileage:          int32(v.Mileage),
-			ZipCode:          v.ZipCode,
-			TradeInSource:    v.TradeInSource,
-			TradeIn:          int32(v.TradeIn),
-			TradeInClean:     int32(v.TradeInClean),
-			TradeInAverage:   int32(v.TradeInAverage),
-			TradeInRough:     int32(v.TradeInRough),
-			RetailSource:     v.RetailSource,
-			Retail:           int32(v.Retail),
-			RetailClean:      int32(v.RetailClean),
-			RetailAverage:    int32(v.RetailAverage),
-			RetailRough:      int32(v.RetailRough),
-			OdometerUnit:     v.OdometerUnit,
-			Odometer:         int32(v.Odometer),
-			Currency:         v.Currency,
-			UserDisplayPrice: int32(v.UserDisplayPrice),
-		}
-	}
-
-	return &rpcValuations, nil
+	//valuations, err := s.userDeviceService.GetValuations(ctx, req.TokenId, "")
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//rpcValuations := pb.DeviceValuation{
+	//	ValuationSets: make([]*pb.ValuationSet, len(valuations.ValuationSets)),
+	//}
+	//
+	//for i, v := range valuations.ValuationSets {
+	//	rpcValuations.ValuationSets[i] = &pb.ValuationSet{
+	//		Vendor:           v.Vendor,
+	//		Updated:          v.Updated,
+	//		Mileage:          int32(v.Mileage),
+	//		ZipCode:          v.ZipCode,
+	//		TradeInSource:    v.TradeInSource,
+	//		TradeIn:          int32(v.TradeIn),
+	//		TradeInClean:     int32(v.TradeInClean),
+	//		TradeInAverage:   int32(v.TradeInAverage),
+	//		TradeInRough:     int32(v.TradeInRough),
+	//		RetailSource:     v.RetailSource,
+	//		Retail:           int32(v.Retail),
+	//		RetailClean:      int32(v.RetailClean),
+	//		RetailAverage:    int32(v.RetailAverage),
+	//		RetailRough:      int32(v.RetailRough),
+	//		OdometerUnit:     v.OdometerUnit,
+	//		Odometer:         int32(v.Odometer),
+	//		Currency:         v.Currency,
+	//		UserDisplayPrice: int32(v.UserDisplayPrice),
+	//	}
+	//}
+	//
+	//return &rpcValuations, nil
 }
 
 func (s *valuationsService) GetUserDeviceOffer(ctx context.Context, req *pb.DeviceOfferRequest) (*pb.DeviceOffer, error) {
 
-	offers, err := s.userDeviceService.GetUserDeviceOffers(ctx, req.UserDeviceId)
+	offers, err := s.userDeviceService.GetOffers(ctx, req.TokenId)
 
 	if err != nil {
 		return nil, err
