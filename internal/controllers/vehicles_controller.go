@@ -59,8 +59,6 @@ func (vc *VehiclesController) GetValuations(c *fiber.Ctx) error {
 		return err
 	}
 
-	// todo get request jwt claim for ethereum_address and compare to owner in vehicle
-
 	takeStr := c.Query("take")
 	take, err := strconv.Atoi(takeStr)
 	if err != nil || take <= 0 {

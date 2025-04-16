@@ -11,6 +11,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
+//go:generate mockgen -source location_service.go -destination mocks/location_service_mock.go
 type LocationService interface {
 	GetGeoDecodedLocation(ctx context.Context, signals *gateways.SignalsLatest, tokenID uint64) (*LocationResponse, error)
 }

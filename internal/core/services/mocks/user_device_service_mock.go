@@ -11,7 +11,6 @@ package mock_services
 
 import (
 	context "context"
-	big "math/big"
 	reflect "reflect"
 
 	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
@@ -57,21 +56,6 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) CanRequestInstantOffer(ctx, toke
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanRequestInstantOffer", reflect.TypeOf((*MockUserDeviceAPIService)(nil).CanRequestInstantOffer), ctx, tokenID)
 }
 
-// CanRequestInstantOfferByTokenID mocks base method.
-func (m *MockUserDeviceAPIService) CanRequestInstantOfferByTokenID(ctx context.Context, tokenID *big.Int) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanRequestInstantOfferByTokenID", ctx, tokenID)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CanRequestInstantOfferByTokenID indicates an expected call of CanRequestInstantOfferByTokenID.
-func (mr *MockUserDeviceAPIServiceMockRecorder) CanRequestInstantOfferByTokenID(ctx, tokenID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanRequestInstantOfferByTokenID", reflect.TypeOf((*MockUserDeviceAPIService)(nil).CanRequestInstantOfferByTokenID), ctx, tokenID)
-}
-
 // GetAllUserDevice mocks base method.
 func (m *MockUserDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi string) ([]*grpc.UserDevice, error) {
 	m.ctrl.T.Helper()
@@ -85,21 +69,6 @@ func (m *MockUserDeviceAPIService) GetAllUserDevice(ctx context.Context, wmi str
 func (mr *MockUserDeviceAPIServiceMockRecorder) GetAllUserDevice(ctx, wmi any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUserDevice", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetAllUserDevice), ctx, wmi)
-}
-
-// GetUserDevice mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDevice(ctx context.Context, tokenID uint64) (*grpc.UserDevice, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDevice", ctx, tokenID)
-	ret0, _ := ret[0].(*grpc.UserDevice)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserDevice indicates an expected call of GetUserDevice.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDevice(ctx, tokenID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDevice", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDevice), ctx, tokenID)
 }
 
 // GetUserDeviceByEthAddr mocks base method.
@@ -117,21 +86,6 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceByEthAddr(ctx, ethA
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceByEthAddr", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceByEthAddr), ctx, ethAddr)
 }
 
-// GetUserDeviceByTokenID mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID *big.Int) (*grpc.UserDevice, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceByTokenID", ctx, tokenID)
-	ret0, _ := ret[0].(*grpc.UserDevice)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserDeviceByTokenID indicates an expected call of GetUserDeviceByTokenID.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceByTokenID(ctx, tokenID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceByTokenID", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceByTokenID), ctx, tokenID)
-}
-
 // GetUserDeviceOffers mocks base method.
 func (m *MockUserDeviceAPIService) GetUserDeviceOffers(ctx context.Context, tokenID uint64) (*models.DeviceOffer, error) {
 	m.ctrl.T.Helper()
@@ -145,21 +99,6 @@ func (m *MockUserDeviceAPIService) GetUserDeviceOffers(ctx context.Context, toke
 func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceOffers(ctx, tokenID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceOffers", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceOffers), ctx, tokenID)
-}
-
-// GetUserDeviceOffersByTokenID mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceOffersByTokenID(ctx context.Context, tokenID *big.Int, take int, userDeviceID string) (*models.DeviceOffer, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceOffersByTokenID", ctx, tokenID, take, userDeviceID)
-	ret0, _ := ret[0].(*models.DeviceOffer)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserDeviceOffersByTokenID indicates an expected call of GetUserDeviceOffersByTokenID.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceOffersByTokenID(ctx, tokenID, take, userDeviceID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceOffersByTokenID", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceOffersByTokenID), ctx, tokenID, take, userDeviceID)
 }
 
 // GetUserDeviceValuations mocks base method.
@@ -177,21 +116,6 @@ func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceValuations(ctx, tok
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceValuations", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceValuations), ctx, tokenID)
 }
 
-// GetUserDeviceValuationsByTokenID mocks base method.
-func (m *MockUserDeviceAPIService) GetUserDeviceValuationsByTokenID(ctx context.Context, tokenID *big.Int, take int) (*models.DeviceValuation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserDeviceValuationsByTokenID", ctx, tokenID, take)
-	ret0, _ := ret[0].(*models.DeviceValuation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserDeviceValuationsByTokenID indicates an expected call of GetUserDeviceValuationsByTokenID.
-func (mr *MockUserDeviceAPIServiceMockRecorder) GetUserDeviceValuationsByTokenID(ctx, tokenID, take any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceValuationsByTokenID", reflect.TypeOf((*MockUserDeviceAPIService)(nil).GetUserDeviceValuationsByTokenID), ctx, tokenID, take)
-}
-
 // LastRequestDidGiveError mocks base method.
 func (m *MockUserDeviceAPIService) LastRequestDidGiveError(ctx context.Context, tokenID uint64) (bool, error) {
 	m.ctrl.T.Helper()
@@ -205,33 +129,4 @@ func (m *MockUserDeviceAPIService) LastRequestDidGiveError(ctx context.Context, 
 func (mr *MockUserDeviceAPIServiceMockRecorder) LastRequestDidGiveError(ctx, tokenID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastRequestDidGiveError", reflect.TypeOf((*MockUserDeviceAPIService)(nil).LastRequestDidGiveError), ctx, tokenID)
-}
-
-// LastRequestDidGiveErrorByTokenID mocks base method.
-func (m *MockUserDeviceAPIService) LastRequestDidGiveErrorByTokenID(ctx context.Context, tokenID *big.Int) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LastRequestDidGiveErrorByTokenID", ctx, tokenID)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LastRequestDidGiveErrorByTokenID indicates an expected call of LastRequestDidGiveErrorByTokenID.
-func (mr *MockUserDeviceAPIServiceMockRecorder) LastRequestDidGiveErrorByTokenID(ctx, tokenID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LastRequestDidGiveErrorByTokenID", reflect.TypeOf((*MockUserDeviceAPIService)(nil).LastRequestDidGiveErrorByTokenID), ctx, tokenID)
-}
-
-// UpdateUserDeviceMetadata mocks base method.
-func (m *MockUserDeviceAPIService) UpdateUserDeviceMetadata(ctx context.Context, request *grpc.UpdateUserDeviceMetadataRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUserDeviceMetadata", ctx, request)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateUserDeviceMetadata indicates an expected call of UpdateUserDeviceMetadata.
-func (mr *MockUserDeviceAPIServiceMockRecorder) UpdateUserDeviceMetadata(ctx, request any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserDeviceMetadata", reflect.TypeOf((*MockUserDeviceAPIService)(nil).UpdateUserDeviceMetadata), ctx, request)
 }

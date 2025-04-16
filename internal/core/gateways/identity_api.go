@@ -21,7 +21,7 @@ type identityAPIService struct {
 	identityAPIURL string
 }
 
-//go:generate mockgen -source identity_api.go -destination mocks/identity_api_mock.go -package mocks
+//go:generate mockgen -source identity_api.go -destination mocks/identity_api_mock.go -package mock_gateways
 type IdentityAPI interface {
 	GetManufacturer(slug string) (*Manufacturer, error)
 	GetDefinition(definitionID string) (*DeviceDefinition, error)

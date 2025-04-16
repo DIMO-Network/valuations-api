@@ -16,7 +16,7 @@ type telemetryAPIService struct {
 	gclient *graphql.Client
 }
 
-//go:generate mockgen -source telemetry_api.go -destination mocks/telemetry_api_mock.go -package mocks
+//go:generate mockgen -source telemetry_api.go -destination mocks/telemetry_api_mock.go -package mock_gateways
 type TelemetryAPI interface {
 	GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*SignalsLatest, error)
 	GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*VinVCLatest, error)
