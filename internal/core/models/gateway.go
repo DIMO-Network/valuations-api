@@ -36,18 +36,14 @@ type Vehicle struct {
 }
 
 type SignalsLatest struct {
-	PowertrainTransmissionTravelledDistance struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"powertrainTransmissionTravelledDistance"`
-	CurrentLocationLatitude struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"currentLocationLatitude"`
-	CurrentLocationLongitude struct {
-		Timestamp time.Time `json:"timestamp"`
-		Value     float64   `json:"value"`
-	} `json:"currentLocationLongitude"`
+	PowertrainTransmissionTravelledDistance TimeFloatValue `json:"powertrainTransmissionTravelledDistance"`
+	CurrentLocationLatitude                 TimeFloatValue `json:"currentLocationLatitude"`
+	CurrentLocationLongitude                TimeFloatValue `json:"currentLocationLongitude"`
+}
+
+type TimeFloatValue struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
 }
 
 type VinVCLatest struct {

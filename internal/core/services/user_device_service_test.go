@@ -4,12 +4,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
-	"testing"
-
 	mock_gateways "github.com/DIMO-Network/valuations-api/internal/core/gateways/mocks"
 	mock_services "github.com/DIMO-Network/valuations-api/internal/core/services/mocks"
 	"go.uber.org/mock/gomock"
+	"os"
+	"testing"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/rs/zerolog"
@@ -145,9 +144,13 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
-
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -169,7 +172,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 	assert.Equal(s.T(), 50396, valuations.ValuationSets[0].TradeInAverage)
 }
 
-func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTokenIDFromUDID() {
+func (s *UserDeviceServiceTestSuite) TestGetValuations_setsTokenIDFromUDID() {
 	// setup
 	ddID := ksuid.New().String()
 	vin := "vinny"
@@ -178,8 +181,13 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricingJSON),
 	}, &s.pdb)
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -205,7 +213,8 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuationsByTokenID_setsTo
 	valuation, err := models.Valuations(models.ValuationWhere.TokenID.EQ(tid)).One(s.ctx, s.pdb.DBS().Reader)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), valuation)
-	assert.Equal(s.T(), valuation.TokenID.Uint64, tokenID)
+	u, _ := valuation.TokenID.Uint64()
+	assert.Equal(s.T(), u, tokenID)
 }
 
 func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
@@ -216,7 +225,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, &s.pdb)
 	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -238,8 +247,13 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"VincarioMetadata": []byte(testVincarioValuationJSON),
 	}, &s.pdb)
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
-	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, "caca").Return(&core.LocationResponse{
+	signals := core.SignalsLatest{
+		PowertrainTransmissionTravelledDistance: core.TimeFloatValue{Value: 49040},
+		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
+		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
+	}
+	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
 
@@ -269,12 +283,21 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceOffers() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"OfferMetadata": []byte(testDrivlyOffersJSON),
 	}, &s.pdb)
+	all, err2 := models.Valuations().All(s.ctx, s.pdb.DBS().Reader)
+	if err2 != nil {
+		s.T().Fatal(err2)
+	}
+	for _, v := range all {
+		u, _ := v.TokenID.Uint64()
+
+		fmt.Printf("tokenId: %d\n", u)
+	}
 
 	deviceOffers, err := s.svc.GetOffers(s.ctx, tokenID)
 
 	assert.NoError(s.T(), err)
 
-	assert.Equal(s.T(), 1, len(deviceOffers.OfferSets))
+	require.Equal(s.T(), 1, len(deviceOffers.OfferSets))
 	assert.Equal(s.T(), "drivly", deviceOffers.OfferSets[0].Source)
 	assert.Equal(s.T(), 3, len(deviceOffers.OfferSets[0].Offers))
 

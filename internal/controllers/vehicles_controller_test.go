@@ -84,22 +84,11 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 	tokenID := uint64(12345)
 	vin := "vinny"
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
-		ID: "xxx",
-		Definition: struct {
-			ID    string `json:"id"`
-			Make  string `json:"make"`
-			Model string `json:"model"`
-			Year  int    `json:"year"`
-		}{ID: "ford_escape_2022"},
-		Owner: "0x123",
-	}, nil)
-
-	s.telemetry.EXPECT().GetVinVC(gomock.Any(), tokenID, gomock.Any()).Return(core.VinVCLatest{
+	s.telemetry.EXPECT().GetVinVC(gomock.Any(), tokenID, gomock.Any()).Return(&core.VinVCLatest{
 		Vin:         vin,
 		CountryCode: "USA",
 	}, nil)
-	s.drivlyValuationSvc.EXPECT().PullValuation(gomock.Any(), tokenID, "ford_escape_2020", vin).
+	s.drivlyValuationSvc.EXPECT().PullValuation(gomock.Any(), tokenID, vin, "").
 		Return(core.PulledValuationDrivlyStatus, nil)
 
 	request := dbtest.BuildRequest("POST", fmt.Sprintf("/vehicles/%d/valuations", tokenID), "")
@@ -111,7 +100,7 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 func (s *VehiclesControllerTestSuite) TestGetValuations_Drivly2() {
 	tokenID := uint64(12345)
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
+	s.identity.EXPECT().GetVehicle(tokenID).Return(&core.Vehicle{
 		ID: "xxx",
 		Definition: struct {
 			ID    string `json:"id"`
@@ -157,7 +146,7 @@ func (s *VehiclesControllerTestSuite) TestGetOffers() {
 
 	tokenID := uint64(12345)
 
-	s.identity.EXPECT().GetVehicle(tokenID).Return(core.Vehicle{
+	s.identity.EXPECT().GetVehicle(tokenID).Return(&core.Vehicle{
 		ID: "xxx",
 		Definition: struct {
 			ID    string `json:"id"`

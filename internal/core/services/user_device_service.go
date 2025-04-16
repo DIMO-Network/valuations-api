@@ -53,7 +53,7 @@ func NewUserDeviceService(devicesConn *grpc.ClientConn, dbs func() *db.ReaderWri
 
 func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenID uint64) (*core.DeviceOffer, error) {
 	// Drivly data
-	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 10))
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	drivlyVinData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(), // offer_metadata is sourced from drivly
@@ -71,7 +71,7 @@ func (das *userDeviceAPIService) GetOffers(ctx context.Context, tokenID uint64) 
 // GetValuations retrieves device valuation details based on the provided tokenID and private JWT token header include Bearer JWT.
 // It queries valuation data, retrieves the latest telemetry signals, and determines the geo-decoded location for valuation.
 func (das *userDeviceAPIService) GetValuations(ctx context.Context, tokenID uint64, privJWT string) (*core.DeviceValuation, error) {
-	d := decimal.New(int64(tokenID), 10)
+	d := decimal.New(int64(tokenID), 0)
 	valuationData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(types.NewNullDecimal(d)),
 		qm.Where("drivly_pricing_metadata is not null or vincario_metadata is not null"),
@@ -250,7 +250,7 @@ func projectValuation(logger *zerolog.Logger, valuation *models.Valuation, count
 }
 
 func (das *userDeviceAPIService) CanRequestInstantOffer(ctx context.Context, tokenID uint64) (bool, error) {
-	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 10))
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	existingOfferData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(),
@@ -275,7 +275,7 @@ func canRequestInstantOffer(existingOfferData *models.Valuation) (bool, error) {
 }
 
 func (das *userDeviceAPIService) LastRequestDidGiveError(ctx context.Context, tokenID uint64) (bool, error) {
-	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 10))
+	tokenDecimal := types.NewNullDecimal(decimal.New(int64(tokenID), 0))
 	existingOfferData, err := models.Valuations(
 		models.ValuationWhere.TokenID.EQ(tokenDecimal),
 		models.ValuationWhere.OfferMetadata.IsNotNull(),
