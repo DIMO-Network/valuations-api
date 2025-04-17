@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/shared/pkg/db"
@@ -50,6 +51,9 @@ func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *c
 		if err != nil {
 			return nil, err
 		}
+		if gl == nil {
+			return nil, errors.New("unable to decode lat long to postal code for valuation request")
+		}
 		gloc = &models.GeodecodedLocation{
 			TokenID:    int64(tokenID),
 			PostalCode: null.StringFrom(gl.PostalCode),
@@ -65,5 +69,5 @@ func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *c
 		}, nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("unable to decode location for token %d", tokenID)
 }
