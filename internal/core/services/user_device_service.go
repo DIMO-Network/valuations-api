@@ -83,14 +83,18 @@ func (das *userDeviceAPIService) GetValuations(ctx context.Context, tokenID uint
 	}
 	signals, err := das.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWT)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get latest signals for token %d, which are needed to get valuation", tokenID)
+		das.logger.Error().Err(err).Msgf("failed to get latest signals for token %d, skipping", tokenID)
 	}
 	location, err := das.locationSvc.GetGeoDecodedLocation(ctx, signals, tokenID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get geo decoded location for token %d, which are needed to get valuation", tokenID)
+		das.logger.Error().Err(err).Msgf("failed to get geo decoded location for token %d, skipping", tokenID)
+	}
+	countryCode := "USA"
+	if location != nil {
+		countryCode = location.CountryCode
 	}
 
-	return buildValuationsFromSlice(das.logger, valuationData, location.CountryCode)
+	return buildValuationsFromSlice(das.logger, valuationData, countryCode)
 }
 
 func getUserDeviceOffers(drivlyVinData models.ValuationSlice) (*core.DeviceOffer, error) {
