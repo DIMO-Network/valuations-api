@@ -45,7 +45,12 @@ vinVCLatest(tokenId:` + strconv.Itoa(int(tokenID)) + `) {
     validTo
   }
 }`
-	req, err := http.NewRequest("POST", i.telemetryAPIURL, bytes.NewBuffer([]byte(query)))
+	requestPayload := coremodels.GraphQLRequest{Query: query}
+	payloadBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", i.telemetryAPIURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create request")
 	}
@@ -97,7 +102,12 @@ signalsLatest(tokenId:` + strconv.Itoa(int(tokenID)) + `) {
 		}
 	}
 }`
-	req, err := http.NewRequest("POST", i.telemetryAPIURL, bytes.NewBuffer([]byte(query)))
+	requestPayload := coremodels.GraphQLRequest{Query: query}
+	payloadBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", i.telemetryAPIURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create request")
 	}
