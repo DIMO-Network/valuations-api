@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/shared/pkg/db"
 	"github.com/DIMO-Network/valuations-api/internal/config"
@@ -32,7 +34,9 @@ func NewLocationService(db func() *db.ReaderWriter, settings *config.Settings, l
 func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *coremodels.SignalsLatest, tokenID uint64) (*coremodels.LocationResponse, error) {
 	gloc, err := models.GeodecodedLocations(models.GeodecodedLocationWhere.TokenID.EQ(int64(tokenID))).One(ctx, ls.dbs().Reader)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.Wrap(err, "failed to query database for geodecoded location")
+		}
 	}
 	if gloc != nil {
 		return &coremodels.LocationResponse{
