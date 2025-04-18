@@ -208,14 +208,10 @@ func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
 
 	status, valuationErr = vc.drivlyValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	if valuationErr != nil {
-		localLog.Err(valuationErr).Msg("failed to get valuation from drivly, retrying with vincario")
-		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin)
-	}
-	if valuationErr != nil {
-		localLog.Err(valuationErr).Msg("failed to get valuation from vincario")
+		localLog.Err(valuationErr).Msg("failed to get valuation from drivly")
 		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
 	}
-	localLog.Info().Msgf("succesfully requested offer with status %s", status)
+	localLog.Info().Msgf("succesfully requested valuation with status %s", status)
 
 	return c.JSON(fiber.Map{
 		"message": "valuation request completed: " + status,
