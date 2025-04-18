@@ -85,7 +85,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "request valuation only from drivly or vincario (if drivly fails)",
+                "description": "request valuation only from drivly. Currently USA Only",
                 "produces": [
                     "application/json"
                 ],

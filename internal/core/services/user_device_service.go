@@ -81,7 +81,7 @@ func (das *userDeviceAPIService) GetValuations(ctx context.Context, tokenID uint
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	signals, err := das.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWT)
+	signals, err := das.telemetryAPI.GetLatestSignals(tokenID, privJWT)
 	if err != nil {
 		das.logger.Error().Err(err).Msgf("failed to get latest signals for token %d, skipping", tokenID)
 	}

@@ -7,6 +7,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DIMO-Network/shared/pkg/logfields"
+	"github.com/rs/zerolog"
+
 	"github.com/DIMO-Network/valuations-api/internal/config"
 )
 
@@ -15,12 +18,13 @@ type GoogleGeoAPIService interface {
 	GeoDecodeLatLong(lat, lng float64) (*MapsGeocodeResp, error)
 }
 
-func NewGoogleGeoAPIService(settings *config.Settings) GoogleGeoAPIService {
-	return &googleGeoAPIService{googleAPIKey: settings.GoogleMapsAPIKey}
+func NewGoogleGeoAPIService(settings *config.Settings, logger *zerolog.Logger) GoogleGeoAPIService {
+	return &googleGeoAPIService{googleAPIKey: settings.GoogleMapsAPIKey, logger: logger}
 }
 
 type googleGeoAPIService struct {
 	googleAPIKey string
+	logger       *zerolog.Logger
 }
 
 func (dda *googleGeoAPIService) GeoDecodeLatLong(lat, lng float64) (*MapsGeocodeResp, error) {
@@ -38,6 +42,8 @@ func (dda *googleGeoAPIService) GeoDecodeLatLong(lat, lng float64) (*MapsGeocode
 
 	var data Result
 	_ = json.Unmarshal(buf.Bytes(), &data) //nolint
+
+	dda.logger.Info().Str(logfields.Payload, buf.String()).Msgf("decoded lat long result")
 	if len(data.Results) > 0 {
 		r := MapsGeocodeResp{}
 		for _, ac := range data.Results[0].AddressComponents {

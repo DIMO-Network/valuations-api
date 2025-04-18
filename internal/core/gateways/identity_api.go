@@ -1,8 +1,6 @@
 package gateways
 
 import (
-	"encoding/json"
-	"io"
 	"strconv"
 	"time"
 
@@ -18,9 +16,8 @@ var ErrNotFound = errors.New("not found")
 var ErrBadRequest = errors.New("bad request")
 
 type identityAPIService struct {
-	httpClient     http.ClientWrapper
-	logger         zerolog.Logger
-	identityAPIURL string
+	httpClient http.ClientWrapper
+	logger     zerolog.Logger
 }
 
 //go:generate mockgen -source identity_api.go -destination mocks/identity_api_mock.go -package mock_gateways
@@ -33,14 +30,11 @@ type IdentityAPI interface {
 // NewIdentityAPIService creates a new instance of IdentityAPI, initializing it with the provided logger, settings, and HTTP client.
 // httpClient is used for testing really
 func NewIdentityAPIService(logger *zerolog.Logger, settings *config.Settings) IdentityAPI {
-	h := map[string]string{}
-	h["Content-Type"] = "application/json"
-	httpClient, _ := http.NewClientWrapper("", "", 10*time.Second, h, false) // ok to ignore err since only used for tor check
+	httpClient, _ := http.NewClientWrapper(settings.IdentityAPIURL.String(), "", 10*time.Second, nil, true) // ok to ignore err since only used for tor check
 
 	return &identityAPIService{
-		httpClient:     httpClient,
-		logger:         *logger,
-		identityAPIURL: settings.IdentityAPIURL.String(),
+		httpClient: httpClient,
+		logger:     *logger,
 	}
 }
 
@@ -62,7 +56,7 @@ func (i *identityAPIService) GetVehicle(tokenID uint64) (*coremodels.Vehicle, er
 			Vehicle coremodels.Vehicle `json:"vehicle"`
 		} `json:"data"`
 	}
-	err := i.fetchWithQuery(query, &wrapper)
+	err := i.httpClient.GraphQLQuery("", query, &wrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +88,7 @@ func (i *identityAPIService) GetDefinition(definitionID string) (*coremodels.Dev
 			DeviceDefinition coremodels.DeviceDefinition `json:"deviceDefinition"`
 		} `json:"data"`
 	}
-	err := i.fetchWithQuery(query, &wrapper)
+	err := i.httpClient.GraphQLQuery("", query, &wrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +113,7 @@ func (i *identityAPIService) GetManufacturer(name string) (*coremodels.Manufactu
 			Manufacturer coremodels.Manufacturer `json:"manufacturer"`
 		} `json:"data"`
 	}
-	err := i.fetchWithQuery(query, &wrapper)
+	err := i.httpClient.GraphQLQuery("", query, &wrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -127,41 +121,4 @@ func (i *identityAPIService) GetManufacturer(name string) (*coremodels.Manufactu
 		return nil, errors.Wrapf(ErrNotFound, "identity-api did not find manufacturer with name: %s", name)
 	}
 	return &wrapper.Data.Manufacturer, nil
-}
-
-func (i *identityAPIService) fetchWithQuery(query string, result interface{}) error {
-	// GraphQL request
-	requestPayload := coremodels.GraphQLRequest{Query: query}
-	payloadBytes, err := json.Marshal(requestPayload)
-	if err != nil {
-		return err
-	}
-
-	// POST request
-	res, err := i.httpClient.ExecuteRequest(i.identityAPIURL, "POST", payloadBytes)
-	if err != nil {
-		i.logger.Err(err).Str("func", "fetchWithQuery").Msgf("request payload: %s", string(payloadBytes))
-		if _, ok := err.(http.ResponseError); !ok {
-			return errors.Wrapf(err, "error calling identity api from url %s", i.identityAPIURL)
-		}
-	}
-	defer res.Body.Close() // nolint
-
-	if res.StatusCode == 404 {
-		return ErrNotFound
-	}
-	if res.StatusCode == 400 {
-		return ErrBadRequest
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return errors.Wrapf(err, "error reading response body from url %s", i.identityAPIURL)
-	}
-
-	if err := json.Unmarshal(bodyBytes, result); err != nil {
-		return err
-	}
-
-	return nil
 }

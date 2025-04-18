@@ -149,7 +149,7 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	var valuationErr error
 	var status core.DataPullStatusEnum
 
-	signals, err := vc.telemetryAPI.GetLatestSignals(c.Context(), tokenID.Uint64(), privJWT)
+	signals, err := vc.telemetryAPI.GetLatestSignals(tokenID.Uint64(), privJWT)
 	if err != nil {
 		return errors.Wrap(err, "failed to get latest signals for tokenId: "+tidStr)
 	}
@@ -157,15 +157,17 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get geo decoded location for tokenId: "+tidStr)
 	}
-	vinVC, err := vc.telemetryAPI.GetVinVC(c.Context(), tokenID.Uint64(), privJWT)
+	vinVC, err := vc.telemetryAPI.GetVinVC(tokenID.Uint64(), privJWT)
 	if err != nil {
 		return errors.Wrap(err, "failed to get vinVC for tokenId: "+tidStr)
 	}
+	countryThreeLetter := services.ConvertSupportedCountry(location.CountryCode)
 
-	if strings.Contains(services.NorthAmercanCountries, location.CountryCode) {
+	if strings.Contains(services.NorthAmercanCountries, countryThreeLetter) {
 		status, valuationErr = vc.drivlyValuationSvc.PullOffer(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	} else {
-		status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin)
+		return fiber.NewError(fiber.StatusBadRequest, "unsupported country: "+location.CountryCode)
+		//status, valuationErr = vc.vincarioValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin)
 	}
 	if valuationErr != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, valuationErr.Error())
@@ -178,10 +180,10 @@ func (vc *VehiclesController) RequestInstantOffer(c *fiber.Ctx) error {
 }
 
 // RequestValuationOnly godoc
-// @Description request valuation only from drivly or vincario (if drivly fails)
+// @Description request valuation only from drivly. Currently USA Only
 // @Tags        valuations
 // @Produce     json
-// @Param 		tokenId path string true "tokenId for vehicle to get valuation"
+// @Param 		tokenId path string true "tokenId for USA based vehicle to get valuation"
 // @Success     200
 // @Security    BearerAuth
 // @Router      /v2/vehicles/{tokenId}/valuation [post]
@@ -199,7 +201,7 @@ func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
 	var valuationErr error
 	var status core.DataPullStatusEnum
 
-	vinVC, err := vc.telemetryAPI.GetVinVC(c.Context(), tokenID.Uint64(), privJWT)
+	vinVC, err := vc.telemetryAPI.GetVinVC(tokenID.Uint64(), privJWT)
 	if err != nil {
 		return errors.Wrap(err, "failed to get vinVC for tokenId: "+tidStr)
 	}

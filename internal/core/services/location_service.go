@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"database/sql"
-	"fmt"
+
+	"github.com/DIMO-Network/shared/pkg/logfields"
 	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/shared/pkg/db"
@@ -27,7 +28,7 @@ type locationService struct {
 }
 
 func NewLocationService(db func() *db.ReaderWriter, settings *config.Settings, logger *zerolog.Logger) LocationService {
-	return &locationService{dbs: db, geoSvc: NewGoogleGeoAPIService(settings), logger: logger}
+	return &locationService{dbs: db, geoSvc: NewGoogleGeoAPIService(settings, logger), logger: logger}
 
 }
 
@@ -45,29 +46,32 @@ func (ls *locationService) GetGeoDecodedLocation(ctx context.Context, signals *c
 			CountryCode: gloc.Country.String,
 		}, nil
 	}
-	if signals != nil && signals.CurrentLocationLatitude.Value > 0 && signals.CurrentLocationLongitude.Value > 0 {
-		// decode the lat long if we have it
-		gl, err := ls.geoSvc.GeoDecodeLatLong(signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
-		if err != nil {
-			return nil, err
-		}
-		if gl == nil {
-			return nil, errors.New("unable to decode lat long to postal code for valuation request")
-		}
-		gloc = &models.GeodecodedLocation{
-			TokenID:    int64(tokenID),
-			PostalCode: null.StringFrom(gl.PostalCode),
-			Country:    null.StringFrom(gl.Country),
-		}
-		err = gloc.Insert(ctx, ls.dbs().Writer, boil.Infer())
-		if err != nil {
-			ls.logger.Err(err).Msgf("failed to insert geodecoded location for token %d", tokenID)
-		}
-		return &coremodels.LocationResponse{
-			PostalCode:  gl.PostalCode,
-			CountryCode: gl.Country,
-		}, nil
+	// guard
+	if signals == nil {
+		return nil, errors.New("no signals provided")
 	}
-
-	return nil, fmt.Errorf("unable to decode location for token %d", tokenID)
+	if signals.CurrentLocationLatitude.Value == 0 && signals.CurrentLocationLongitude.Value == 0 {
+		return nil, errors.New("no location provided, lat long zero")
+	}
+	// decode the lat long with google
+	gl, err := ls.geoSvc.GeoDecodeLatLong(signals.CurrentLocationLatitude.Value, signals.CurrentLocationLongitude.Value)
+	if err != nil {
+		return nil, err
+	}
+	if gl == nil {
+		return nil, errors.New("no information found when decoding lat long to postal code for valuation request")
+	}
+	gloc = &models.GeodecodedLocation{
+		TokenID:    int64(tokenID),
+		PostalCode: null.StringFrom(gl.PostalCode),
+		Country:    null.StringFrom(gl.Country),
+	}
+	err = gloc.Insert(ctx, ls.dbs().Writer, boil.Infer())
+	if err != nil {
+		ls.logger.Err(err).Uint64(logfields.VehicleTokenID, tokenID).Msgf("failed to insert geodecoded location")
+	}
+	return &coremodels.LocationResponse{
+		PostalCode:  gl.PostalCode,
+		CountryCode: gl.Country,
+	}, nil
 }

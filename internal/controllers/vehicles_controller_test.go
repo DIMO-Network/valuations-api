@@ -84,7 +84,7 @@ func (s *VehiclesControllerTestSuite) TestPostRequestValuationOnly_Drivly1() {
 	tokenID := uint64(12345)
 	vin := "vinny"
 
-	s.telemetry.EXPECT().GetVinVC(gomock.Any(), tokenID, gomock.Any()).Return(&core.VinVCLatest{
+	s.telemetry.EXPECT().GetVinVC(tokenID, gomock.Any()).Return(&core.VinVCLatest{
 		Vin:         vin,
 		CountryCode: "USA",
 	}, nil)
