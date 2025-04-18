@@ -75,7 +75,8 @@ func main() {
 		settings: cfg,
 		pdb:      pdb,
 	}, "")
-	subcommands.Register(&gqlTelemetryCmd{logger: logger, telemetry: telemetryAPI}, "")
+	subcommands.Register(&gqlTelemetryCmd{logger: logger, telemetry: telemetryAPI, identity: identityAPI, settings: &cfg, dbs: pdb.DBS},
+		"")
 
 	// Run API
 	if len(os.Args) == 1 {

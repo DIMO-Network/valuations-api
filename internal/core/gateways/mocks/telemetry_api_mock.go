@@ -10,7 +10,6 @@
 package mock_gateways
 
 import (
-	context "context"
 	reflect "reflect"
 
 	models "github.com/DIMO-Network/valuations-api/internal/core/models"
@@ -41,31 +40,31 @@ func (m *MockTelemetryAPI) EXPECT() *MockTelemetryAPIMockRecorder {
 }
 
 // GetLatestSignals mocks base method.
-func (m *MockTelemetryAPI) GetLatestSignals(ctx context.Context, tokenID uint64, authHeader string) (*models.SignalsLatest, error) {
+func (m *MockTelemetryAPI) GetLatestSignals(tokenID uint64, authHeader string) (*models.SignalsLatest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestSignals", ctx, tokenID, authHeader)
+	ret := m.ctrl.Call(m, "GetLatestSignals", tokenID, authHeader)
 	ret0, _ := ret[0].(*models.SignalsLatest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLatestSignals indicates an expected call of GetLatestSignals.
-func (mr *MockTelemetryAPIMockRecorder) GetLatestSignals(ctx, tokenID, authHeader any) *gomock.Call {
+func (mr *MockTelemetryAPIMockRecorder) GetLatestSignals(tokenID, authHeader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSignals", reflect.TypeOf((*MockTelemetryAPI)(nil).GetLatestSignals), ctx, tokenID, authHeader)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSignals", reflect.TypeOf((*MockTelemetryAPI)(nil).GetLatestSignals), tokenID, authHeader)
 }
 
 // GetVinVC mocks base method.
-func (m *MockTelemetryAPI) GetVinVC(ctx context.Context, tokenID uint64, authHeader string) (*models.VinVCLatest, error) {
+func (m *MockTelemetryAPI) GetVinVC(tokenID uint64, authHeader string) (*models.VinVCLatest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVinVC", ctx, tokenID, authHeader)
+	ret := m.ctrl.Call(m, "GetVinVC", tokenID, authHeader)
 	ret0, _ := ret[0].(*models.VinVCLatest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVinVC indicates an expected call of GetVinVC.
-func (mr *MockTelemetryAPIMockRecorder) GetVinVC(ctx, tokenID, authHeader any) *gomock.Call {
+func (mr *MockTelemetryAPIMockRecorder) GetVinVC(tokenID, authHeader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVinVC", reflect.TypeOf((*MockTelemetryAPI)(nil).GetVinVC), ctx, tokenID, authHeader)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVinVC", reflect.TypeOf((*MockTelemetryAPI)(nil).GetVinVC), tokenID, authHeader)
 }

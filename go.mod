@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.2
 
 require (
-	github.com/DIMO-Network/shared v1.0.0
+	github.com/DIMO-Network/shared v1.0.1
 	github.com/IBM/sarama v1.43.3
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b
 	github.com/docker/go-connections v0.5.0

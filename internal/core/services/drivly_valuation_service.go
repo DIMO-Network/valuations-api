@@ -86,7 +86,7 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 	}
 
 	// get mileage for the drivly request
-	signals, err := d.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWTAuthHeader)
+	signals, err := d.telemetryAPI.GetLatestSignals(tokenID, privJWTAuthHeader)
 	if err != nil {
 		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get telemetry latest signals for token %d", tokenID)
 	}
@@ -104,6 +104,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get geo decoded location for token %d", tokenID)
 	} else {
 		reqData.ZipCode = &location.PostalCode
+	}
+	if location.CountryCode != "US" {
+		return core.SkippedDataPullStatus, fmt.Errorf("valuations only available for USA")
 	}
 
 	// add the request data to the valuation record
@@ -155,7 +158,7 @@ func (d *drivlyValuationService) PullOffer(ctx context.Context, tokenID uint64, 
 	}
 
 	// get mileage for the drivly request
-	signals, err := d.telemetryAPI.GetLatestSignals(ctx, tokenID, privJWTAuthHeader)
+	signals, err := d.telemetryAPI.GetLatestSignals(tokenID, privJWTAuthHeader)
 	if err != nil {
 		// just warn if can't get data
 		localLog.Warn().Err(err).Msgf("could not find any telemtry data to obtain mileage or location - continuing without")

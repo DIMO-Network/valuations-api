@@ -150,7 +150,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format1() {
 		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
 		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
 	}
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.telemetry.EXPECT().GetLatestSignals(tokenID, "caca").Return(&signals, nil)
 	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
@@ -187,7 +187,7 @@ func (s *UserDeviceServiceTestSuite) TestGetValuations_setsTokenIDFromUDID() {
 		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
 		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
 	}
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.telemetry.EXPECT().GetLatestSignals(tokenID, "caca").Return(&signals, nil)
 	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
@@ -225,7 +225,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Format2() {
 	_ = setupCreateValuationsData(s.T(), tokenID, ddID, vin, map[string][]byte{
 		"DrivlyPricingMetadata": []byte(testDrivlyPricing2JSON),
 	}, &s.pdb)
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(nil, nil)
+	s.telemetry.EXPECT().GetLatestSignals(tokenID, "caca").Return(nil, nil)
 	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), nil, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
@@ -253,7 +253,7 @@ func (s *UserDeviceServiceTestSuite) TestGetUserDeviceValuations_Vincario() {
 		CurrentLocationLatitude:                 core.TimeFloatValue{Value: 49.241},
 		CurrentLocationLongitude:                core.TimeFloatValue{Value: -123.521},
 	}
-	s.telemetry.EXPECT().GetLatestSignals(gomock.Any(), tokenID, "caca").Return(&signals, nil)
+	s.telemetry.EXPECT().GetLatestSignals(tokenID, "caca").Return(&signals, nil)
 	s.locationSvc.EXPECT().GetGeoDecodedLocation(gomock.Any(), &signals, tokenID).Return(&core.LocationResponse{
 		CountryCode: "USA",
 	}, nil)
