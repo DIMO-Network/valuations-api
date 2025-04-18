@@ -43,7 +43,7 @@ func (dda *googleGeoAPIService) GeoDecodeLatLong(lat, lng float64) (*MapsGeocode
 	var data Result
 	_ = json.Unmarshal(buf.Bytes(), &data) //nolint
 
-	dda.logger.Info().Str(logfields.Payload, buf.String()).Msgf("decoded lat long result")
+	dda.logger.Debug().Str(logfields.Payload, buf.String()).Msgf("decoded lat long result")
 	if len(data.Results) > 0 {
 		r := MapsGeocodeResp{}
 		for _, ac := range data.Results[0].AddressComponents {
