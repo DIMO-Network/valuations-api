@@ -205,6 +205,9 @@ func (vc *VehiclesController) RequestValuationOnly(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get vinVC for tokenId: "+tidStr)
 	}
+	if vinVC == nil {
+		return fiber.NewError(fiber.StatusBadRequest, "no vinVC found for tokenId: "+tidStr)
+	}
 
 	status, valuationErr = vc.drivlyValuationSvc.PullValuation(c.Context(), tokenID.Uint64(), vinVC.Vin, privJWT)
 	if valuationErr != nil {
