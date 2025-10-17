@@ -9,18 +9,18 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/DIMO-Network/server-garage/pkg/fibercommon/jwtmiddleware"
 	"github.com/DIMO-Network/shared/pkg/payloads"
+	"github.com/DIMO-Network/token-exchange-api/pkg/tokenclaims"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
 
 	"github.com/IBM/sarama"
 	"github.com/burdiyan/kafkautil"
 	"github.com/lovoo/goka"
 
-	"github.com/DIMO-Network/shared/pkg/middleware/privilegetoken"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/DIMO-Network/shared/pkg/db"
-	"github.com/DIMO-Network/shared/pkg/privileges"
 	"github.com/DIMO-Network/valuations-api/internal/config"
 	"github.com/DIMO-Network/valuations-api/internal/controllers"
 	"github.com/DIMO-Network/valuations-api/internal/controllers/helpers"
@@ -173,20 +173,18 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, userDeviceSvc
 		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
-	})
-	tk := privilegetoken.New(privilegetoken.Config{
-		Log: &logger,
+		Claims: &tokenclaims.Token{},
 	})
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 	vOwner := app.Group("/v2/vehicles/:tokenId", privilegeAuth)
-	vOwner.Get("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetValuations)
-	vOwner.Get("/offers", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), vehiclesController.GetOffers)
+	vOwner.Get("/valuations", jwtmiddleware.OneOfPermissions(vehicleAddr, "tokenId", []string{tokenclaims.PermissionGetNonLocationHistory}), vehiclesController.GetValuations)
+	vOwner.Get("/offers", jwtmiddleware.OneOfPermissions(vehicleAddr, "tokenId", []string{tokenclaims.PermissionGetNonLocationHistory}), vehiclesController.GetOffers)
 	// request an offer of valuation
-	vOwner.Post("/instant-offer", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleVinCredential}), vehiclesController.RequestInstantOffer)
-	vOwner.Post("/valuation", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleVinCredential}), vehiclesController.RequestValuationOnly)
+	vOwner.Post("/instant-offer", jwtmiddleware.OneOfPermissions(vehicleAddr, "tokenId", []string{tokenclaims.PermissionGetNonLocationHistory}), vehiclesController.RequestInstantOffer)
+	vOwner.Post("/valuation", jwtmiddleware.OneOfPermissions(vehicleAddr, "tokenId", []string{tokenclaims.PermissionGetNonLocationHistory}), vehiclesController.RequestValuationOnly)
 	// same as above but it causes confusion so
-	vOwner.Post("/valuations", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleVinCredential}), vehiclesController.RequestValuationOnly)
+	vOwner.Post("/valuations", jwtmiddleware.OneOfPermissions(vehicleAddr, "tokenId", []string{tokenclaims.PermissionGetNonLocationHistory}), vehiclesController.RequestValuationOnly)
 
 	logger.Info().Msg("HTTP web server started on port " + settings.Port)
 	// Start Server from a different go routine

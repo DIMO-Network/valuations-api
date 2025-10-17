@@ -103,9 +103,9 @@ func (d *drivlyValuationService) PullValuation(ctx context.Context, tokenID uint
 	if err != nil {
 		d.log.Warn().Err(err).Uint64("token_id", tokenID).Msgf("could not get geo decoded location for token %d", tokenID)
 		return core.SkippedDataPullStatus, fmt.Errorf("unable to get vehicle location to provide valuation")
-	} else {
-		reqData.ZipCode = &location.PostalCode
 	}
+	reqData.ZipCode = &location.PostalCode
+
 	if location.CountryCode != "US" {
 		return core.SkippedDataPullStatus, fmt.Errorf("valuations only available for USA")
 	}
