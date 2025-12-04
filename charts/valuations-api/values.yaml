@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/valuations-api
   pullPolicy: IfNotPresent
-  tag: b0de4e1
+  tag: 3844c49
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -19,7 +19,7 @@ securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
-    - all
+      - all
 env:
   ENVIRONMENT: dev
   PORT: '8080'
@@ -71,15 +71,15 @@ service:
       targetPort: grpc
       protocol: TCP
 ports:
-- name: mon-http
-  containerPort: 8888
-  protocol: TCP
-- name: http
-  containerPort: 8080
-  protocol: TCP
-- name: grpc
-  containerPort: 8086
-  protocol: TCP
+  - name: mon-http
+    containerPort: 8888
+    protocol: TCP
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+  - name: grpc
+    containerPort: 8086
+    protocol: TCP
 ingress:
   enabled: true
   className: nginx
@@ -91,10 +91,10 @@ ingress:
     nginx.ingress.kubernetes.io/limit-rps: '5'
     external-dns.alpha.kubernetes.io/hostname: valuations-api.dev.dimo.zone
   hosts:
-  - host: valuations-api.dev.dimo.zone
-    paths:
-    - path: /
-      pathType: ImplementationSpecific
+    - host: valuations-api.dev.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
 resources:
   limits:
@@ -119,11 +119,9 @@ serviceMonitor:
   port: mon-http
   interval: 30s
 jobs:
-- name: batch-valuations
-  enabled: false
-  schedule: 0 0 * * 0
-  args:
-  - -c
-  - /valuations-api valuations-pull; CODE=$?; echo "valuations-pull completed"; wget
-    -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit
-    $CODE;
+  - name: batch-valuations
+    enabled: false
+    schedule: 0 0 * * 0
+    args:
+      - '-c'
+      - /valuations-api valuations-pull; CODE=$?; echo "valuations-pull completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;
