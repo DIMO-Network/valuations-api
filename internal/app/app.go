@@ -2,19 +2,12 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
-	"github.com/DIMO-Network/shared/pkg/payloads"
 	"github.com/DIMO-Network/valuations-api/internal/core/gateways"
-
-	"github.com/IBM/sarama"
-	"github.com/burdiyan/kafkautil"
-	"github.com/lovoo/goka"
 
 	"github.com/DIMO-Network/shared/pkg/middleware/privilegetoken"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,10 +42,6 @@ import (
 func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *config.Settings, identity gateways.IdentityAPI,
 	userDeviceSvc services.UserDeviceAPIService, telemetry gateways.TelemetryAPI, locationSvc services.LocationService) {
 
-	// mint events consumer to request valuations and offers for new paired vehicles
-	// removing this for now b/c the events topic produces way too many messages & duplicates, we need something that only emits once on new mints
-	startEventsConsumer(settings, logger, pdb, identity, telemetry)
-
 	startMonitoringServer(logger, settings)
 	go startGRCPServer(pdb, logger, settings, userDeviceSvc)
 
@@ -67,37 +56,6 @@ func Run(ctx context.Context, pdb db.Store, logger zerolog.Logger, settings *con
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
 	_ = ctx.Done()
-}
-
-// startEventsConsumer listens to kafka topic configured by EVENTS_TOPIC and processes vehicle nft mint events to trigger new valuations
-func startEventsConsumer(settings *config.Settings, logger zerolog.Logger, pdb db.Store, identity gateways.IdentityAPI, telemetry gateways.TelemetryAPI) {
-
-	ingestSvc := services.NewVehicleMintValuationIngest(pdb.DBS, logger, settings, telemetry, identity)
-	//goka setup
-	sc := goka.DefaultConfig()
-	sc.Version = sarama.V2_8_1_0
-	goka.ReplaceGlobalConfig(sc)
-
-	group := goka.DefineGroup("valuation-trigger-consumer",
-		goka.Input(goka.Stream(settings.EventsTopic), new(payloads.JSONCodec[payloads.CloudEvent[json.RawMessage]]), ingestSvc.ProcessVehicleMintMsg),
-	)
-
-	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
-		group,
-		goka.WithHasher(kafkautil.MurmurHasher),
-	)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Could not start valuations trigger processor")
-	}
-
-	go func() {
-		err = processor.Run(context.Background())
-		if err != nil {
-			logger.Fatal().Err(err).Msg("could not run device status processor")
-		}
-	}()
-
-	logger.Info().Msg("valuations trigger from vehicle mint consumer started")
 }
 
 // startMonitoringServer start server for monitoring endpoints. Could likely be moved to shared lib.

@@ -30,7 +30,6 @@ env:
   DRIVLY_OFFER_API_URL: https://offers.dev.driv.ly
   TOKEN_EXCHANGE_JWT_KEY_SET_URL: http://dex-roles-rights-prod.prod.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
-  KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   IDENTITY_API_URL: http://identity-api-prod:8080/query
   TELEMETRY_API_URL: https://telemetry-api.dimo.zone/query
 ingress:
